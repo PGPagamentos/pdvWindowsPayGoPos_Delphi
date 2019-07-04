@@ -3,7 +3,7 @@
 // unit:   uPOSEnums
 // Classe: TPOSEnums
 //
-// Data de criação  :  01/07/2019
+// Data de criação  :  04/07/2019
 // Autor            :
 // Descrição        :
 //
@@ -11,6 +11,7 @@
 unit uPOSEnums;
 
 interface
+
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, System.StrUtils, system.AnsiStrings,
@@ -100,7 +101,6 @@ const
   PTICNF_PRINTERR = 2; // Erro na impressora, desfazer a transação
   PTICNF_DISPFAIL = 3; // Erro com o mecanismo dispensador, desfazer a transação
   PTICNF_OTHERERR = 4; // Outro erro, desfazer a transação.
-
 
 
 //==========================================================================================
@@ -211,7 +211,6 @@ const
 
 
 
-
   Constructor Create;    // declaração do metodo construtor
 
   Destructor  Destroy; Override; // declaração do metodo destrutor
@@ -224,7 +223,6 @@ const
 
 var
 eCclasse:TCPOSEnums;
-
 
 
 
