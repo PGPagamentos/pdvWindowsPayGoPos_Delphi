@@ -3,7 +3,7 @@
      unit:   POSPGWLib
      Classe: TPOSPGWLib
 
-     Data de criação  :  02/07/2019
+     Data de criação  :  11/07/2019
      Autor            :
      Descrição        :
    }
@@ -15,7 +15,7 @@ interface
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, System.StrUtils, system.AnsiStrings,
-  Vcl.Graphics,Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, System.Types, System.TypInfo, uPOSEnums;
+  Vcl.Graphics,Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, System.Types, System.TypInfo, uPOSEnums, uLib;
 
 
 
@@ -63,6 +63,13 @@ Type
        PSZ_GetiRet = Array[0..0] of CPT_GetiRet;
 
 
+       CPT_GetpszValue = record
+            pszValue: Array[0..2048] of AnsiChar;
+       end;
+       PSZ_GetpszValue = Array[0..0] of CPT_GetpszValue;
+
+
+
 
 
   TPOSPGWLib = class
@@ -93,15 +100,24 @@ Type
     WszModel : AnsiString;
     WszMAC: AnsiString;
     WszSerNum: AnsiString;
-
+    WszStatus: SHORT;
 
 
     constructor Create;
     Destructor  Destroy; Override; // declaração do metodo destrutor
 
-
+    function Init:Integer;
+    function Conexao:Integer;
+    function NovaConexao:Integer;
+    function PrintResultParams(WterminalID:AnsiString):Integer;
+    function pszGetInfoDescription(wIdentificador:Integer):string;
+    function Finalizar:Integer;
+    //
+    function ConexaoExemplo:Integer;
+    function Cancelamento:Integer;
 
 end;
+
 
 
 
@@ -124,10 +140,10 @@ end;
 
 
                 pszPOS_Capabilities .....= Capacidades da Automação (soma dos valores abaixo):
-                                           1: funcionalidade de troco/saque;
-                                           2: funcionalidade de desconto;
-                                           4: valor fixo, sempre incluir;
-                                           8: impressão das vias diferenciadas do comprovante para Cliente/Estabelecimento;
+                                           1:  funcionalidade de troco/saque;
+                                           2:  funcionalidade de desconto;
+                                           4:  valor fixo, sempre incluir;
+                                           8:  impressão das vias diferenciadas do comprovante para Cliente/Estabelecimento;
                                            16: impressão do cupom reduzido.
                                            32: utilização de saldo total do voucher para abatimento do valor da compra.
 
@@ -225,6 +241,8 @@ end;
   function PTI_CheckStatus(pszTerminalId:  AnsiString; var piStatus:SHORT; pszModel:AnsiString;
                            pszMAC:AnsiString; pszSerNo:AnsiString; var piRet:SHORT):Int16; stdCall; External 'PTI_DLL.dll';
 
+//  function PTI_CheckStatus(pszTerminalId:  AnsiString; var piStatus:SHORT; pszModel:AnsiString;
+//                           pszMAC:AnsiString; pszSerNo:AnsiString; var piRet:SHORT):Int16; stdCall; External 'PTI_DLL.dll';
 
 
 //==============================================================================================
@@ -415,6 +433,11 @@ end;
                     PTIRET_SECURITYERR   A função foi rejeitada por questões de segurança.
    }
 //===============================================================================================
+{  function PTI_GetData (pszTerminalId:AnsiString; pszPrompt:AnsiString; pszFormat:AnsiString; uiLenMin:UInt16;
+                        uiLenMax:UInt16; fFromLef:BOOL; fAlpha:BOOL; fMask:BOOL;
+                        uiTimeOutSec:UInt16; var pszData:AnsiString; uiCaptureLine:UInt16; var piRet:SHORT):Int16; stdCall; External 'PTI_DLL.dll';
+ }
+
   function PTI_GetData (pszTerminalId:AnsiString; pszPrompt:AnsiString; pszFormat:AnsiString; uiLenMin:UInt16;
                         uiLenMax:UInt16; fFromLef:BOOL; fAlpha:BOOL; fMask:BOOL;
                         uiTimeOutSec:UInt16; var pszData:PSZ_GetpszData; uiCaptureLine:UInt16; var piRet:SHORT):Int16; stdCall; External 'PTI_DLL.dll';
@@ -613,10 +636,10 @@ end;
                       ==============================
                       Nome                  Valor     Descrição
                       ====================  =====     ====================================
-                      PWOPER_SALE            21h      Pagamento de mercadorias ou serviços.
-                      PWOPER_ADMIN           20h      Qualquer transação que não seja um pagamento (estorno,
+                      PWOPER_SALE            33       Pagamento de mercadorias ou serviços.
+                      PWOPER_ADMIN           32       Qualquer transação que não seja um pagamento (estorno,
                                                       pré-autorização, consulta, relatório, reimpressão de recibo,etc).
-                      PWOPER_SALEVOID        22h      Estorna uma transação de venda que foi previamente
+                      PWOPER_SALEVOID        34       Estorna uma transação de venda que foi previamente
                                                       realizada e confirmada.
   }
 //=======================================================================================================================
@@ -700,7 +723,7 @@ end;
                       PTIRET_NODATA      Informação não disponível.
    }
 //===========================================================================================================
-  function PTI_EFT_GetInfo (pszTerminalId:AnsiString; iInfo:Int16;  uiBufLen:UInt16; var pszValue:AnsiString;
+  function PTI_EFT_GetInfo (pszTerminalId:AnsiString; iInfo:Int16;  uiBufLen:UInt16; var szValue:PSZ_GetpszValue;
                             var piRet:SHORT):Int16; stdCall; External 'PTI_DLL.dll';
 
 
@@ -841,8 +864,10 @@ end;
 
 implementation
 
-var
+uses  uLib02;
 
+
+var
 
    sziRet : PSZ_GetiRet;
 
@@ -852,13 +877,92 @@ var
    szSerNum: PSZ_GetpszSerNum;
    pszData: PSZ_GetpszData;
 
+   szValue: PSZ_GetpszValue;
 
+
+
+
+
+function TPOSPGWLib.Cancelamento: Integer;
+begin
+
+
+
+end;
+
+function TPOSPGWLib.Conexao: Integer;
+var
+ iRet:Int16;
+ IRetorno:Integer;
+ ret : SHORT;
+ I:Integer;
+
+ caminho:string;
+
+begin
+
+
+     isRunning := True;
+
+
+     I := 0;
+
+
+     while I < 10000 do
+     begin
+
+
+         ret := 99;
+
+         PTI_ConnectionLoop(szTerminalId, szModel, szMAC, szSerNum, Ret);
+
+
+         if(Ret = -2016) then   // PTIRET_NEWCONN
+            begin
+
+
+               WszTerminalId := szTerminalId[0].pszTerminalId;
+               WszModel      := szModel[0].pszModel;
+               WszMAC        := szMAC[0].pszMAC;
+               WszSerNum     := szSerNum[0].pszSerNum;
+
+
+               result := Ret;
+
+               Break;
+
+               Exit;
+
+            end;
+
+
+
+
+        Sleep(300);
+
+     end;
+
+
+
+
+end;
+
+
+
+
+function TPOSPGWLib.ConexaoExemplo: Integer;
+begin
+
+
+
+end;
 
 
 
 constructor TPOSPGWLib.Create;
 begin
 
+  // POSenums   := TCPOSEnums.Create;
 
 end;
 
@@ -870,6 +974,242 @@ end;
 
 
 
+function TPOSPGWLib.Finalizar: Integer;
+begin
+
+      PTI_End();
+
+end;
+
+function TPOSPGWLib.Init: Integer;
+var
+ ret : SHORT;
+ caminho:string;
+begin
+
+    currentNumberOfTerminals := 0;
+    Caminho := ExtractFilePath(ParamStr(0)) + pasta;
+    appWorkingPath := caminho;
+    appListeningPort := 10000;
+    maxNumberOfTerminals := 50;
+    msgIdle := 'APLICACAO TESTE';
+    appCompany := 'NTK Solutions';
+    appVersion := 'Aplicacao exemplo 1.0';
+
+
+    PTI_Init(appCompany, appVersion, '24', appWorkingPath, appListeningPort, maxNumberOfTerminals,msgIdle, 0, ret);
+
+    if (ret  <>  POSenums.PTIRET_OK) then
+        begin
+            ShowMessage('ERRO AO INICIAR DLL: ' + IntToStr(ret));
+        end;
+
+     Result := ret;
+
+
+end;
+
+
+
+
+function TPOSPGWLib.NovaConexao: Integer;
+var
+ ret : SHORT;
+ key : SHORT;
+ status : SHORT;
+ puiSelection:ShortInt;
+ iRet: Int16;
+ WpszData: AnsiString;
+
+begin
+
+     // ShowMessage('Nova Conexao');
+
+     key := 99;
+     ret := 99;
+     status := 99;
+     puiSelection := -1;
+
+    // ShowMessage('TERMINAL ' + WszTerminalId + ' CONECTADO');
+
+     //Mostra ao usuário o identificador do terminal que conectou:
+     PTI_Display(WszTerminalId, 'TERMINAL '  + WszTerminalId +   chr(13) +  ' CONECTADO', ret);
+
+     // ShowMessage('TERMINAL ' + WszTerminalId + ' CONECTADO');
+
+
+     // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+     PTI_WaitKey(WszTerminalId, 5, key, ret);
+
+     // Consulta informações do terminal através da função PTI_CheckStatus:
+     PTI_CheckStatus(WszTerminalId, status, WszModel, WszMAC, WszSerNum, ret);
+
+     // Mostra ao usuário os dados obtidos através da função PTI_CheckStatus:
+     PTI_Display(WszTerminalId, 'SERIAL: ' + WszSerNum + chr(13) + 'MAC: ' + WszMAC + chr(13) + 'MODELO: ' + WszModel + chr(13) +'Status: ' + IntToStr(status), ret);
+     // PTI_Display(WszTerminalId, 'SERIAL: ' + WszSerNum + chr(13) + 'MAC: ' + WszMAC + chr(13) + 'MODELO: ' + WszModel + 'Status: ' + IntToStr(status), ret);
+
+     // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+     PTI_WaitKey(WszTerminalId, 5, key, ret);
+
+
+
+
+
+
+
+    PTI_Disconnect(WszTerminalId, 0);
+
+
+
+    result := Ret;
+
+
+end;
+
+
+
+
+
+//=====================================================================================*\
+  {
+     Funcao     :  PrintResultParams
+
+     Descricao  :  Esta função exibe na tela todas as informações de resultado disponíveis
+                   no momento em que foi chamada.
+
+     Entradas   :  nao ha.
+
+     Saidas     :  nao ha.
+
+     Retorno    :  nao ha.
+  }
+//=====================================================================================*/
+function TPOSPGWLib.PrintResultParams(WterminalID: AnsiString): Integer;
+var
+  I:Integer;
+  Ir:Integer;
+  volta:string;
+
+  iRet:Integer;
+  ret:SHORT;
+  retorno:AnsiString;
+  WTexto:string;
+  Wmax:Integer;
+
+begin
+
+   I := 0;
+   WTexto := '';
+   Wmax := 32000;  //   243 32000
+
+   while I < Wmax  do
+   begin
+
+       volta :=  pszGetInfoDescription(I);
+       if (volta = 'PWINFO_XXX') then
+          begin
+            I := I+1;
+            Continue;
+          end;
+
+
+       PTI_EFT_GetInfo(WterminalID, I, SizeOf(szValue), szValue, ret);
+
+       if (ret = eCclasse.PTIRET_OK) then
+           begin
+             retorno := szValue[0].pszValue;
+             //WTexto := WTexto + volta + ' = ' + retorno;
+             WTexto := WTexto + volta + ' = ' + retorno + chr(13);
+           end;
+
+       I := I+1;
+
+   end;
+
+
+   PTI_Print(WterminalID, WTexto, ret);
+
+
+end;
+
+
+
+
+//=====================================================================================*\
+  {
+   Funcao     :  pszGetInfoDescription
+
+   Descricao  :  Esta função recebe um código PWINFO_XXX e retorna uma string com a
+                 descrição da informação representada por aquele código.
+
+   Entradas   :  wIdentificador :  Código da informação (PWINFO_XXX).
+
+   Saidas     :  nao ha.
+
+   Retorno    :  String representando o código recebido como parâmetro.
+  }
+//=====================================================================================*/
+  function TPOSPGWLib.pszGetInfoDescription(wIdentificador:Integer):string;
+  begin
+
+       case wIdentificador of
+
+        eCclasse.PWINFO_OPERATION           :  Result := 'PWINFO_OPERATION';
+        eCclasse.PWINFO_MERCHANTCNPJCPF     :  Result := 'PWINFO_MERCHANTCNPJCPF';
+        eCclasse.PWINFO_TOTAMNT             :  Result := 'PWINFO_TOTAMNT';
+        eCclasse.PWINFO_CURRENCY            :  Result := 'PWINFO_CURRENCY';
+        eCclasse.PWINFO_FISCALREF           :  Result := 'PWINFO_FISCALREF';
+        eCclasse.PWINFO_CARDTYPE            :  Result := 'PWINFO_CARDTYPE';
+        eCclasse.PWINFO_PRODUCTNAME         :  Result := 'PWINFO_PRODUCTNAME';
+        eCclasse.PWINFO_DATETIME            :  Result := 'PWINFO_DATETIME';
+        eCclasse.PWINFO_REQNUM              :  Result := 'PWINFO_REQNUM';
+        eCclasse.PWINFO_AUTHSYST            :  Result := 'PWINFO_AUTHSYST';
+        eCclasse.PWINFO_VIRTMERCH           :  Result := 'PWINFO_VIRTMERCH';
+        eCclasse.PWINFO_AUTMERCHID          :  Result := 'PWINFO_AUTMERCHID';
+        eCclasse.PWINFO_FINTYPE             :  Result := 'PWINFO_FINTYPE';
+        eCclasse.PWINFO_INSTALLMENTS        :  Result := 'PWINFO_INSTALLMENTS';
+        eCclasse.PWINFO_INSTALLMDATE        :  Result := 'PWINFO_INSTALLMDATE';
+        eCclasse.PWINFO_RESULTMSG           :  Result := 'PWINFO_RESULTMSG';
+        eCclasse.PWINFO_AUTLOCREF           :  Result := 'PWINFO_AUTLOCREF';
+        eCclasse.PWINFO_AUTEXTREF           :  Result := 'PWINFO_AUTEXTREF';
+        eCclasse.PWINFO_AUTHCODE            :  Result := 'PWINFO_AUTHCODE';
+        eCclasse.PWINFO_AUTRESPCODE         :  Result := 'PWINFO_AUTRESPCODE';
+        eCclasse.PWINFO_DISCOUNTAMT         :  Result := 'PWINFO_DISCOUNTAMT';
+        eCclasse.PWINFO_CASHBACKAMT         :  Result := 'PWINFO_CASHBACKAMT';
+        eCclasse.PWINFO_CARDNAME            :  Result := 'PWINFO_CARDNAME';
+        eCclasse.PWINFO_BOARDINGTAX         :  Result := 'PWINFO_BOARDINGTAX';
+        eCclasse.PWINFO_TIPAMOUNT           :  Result := 'PWINFO_TIPAMOUNT';
+        //eCclasse.PWINFO_RCPTMERCH           :  Result := 'PWINFO_RCPTMERCH';
+        //eCclasse.PWINFO_RCPTCHOLDER         :  Result := 'PWINFO_RCPTCHOLDER';
+        //eCclasse.PWINFO_RCPTCHSHORT         :  Result := 'PWINFO_RCPTCHSHORT';
+        eCclasse.PWINFO_TRNORIGDATE         :  Result := 'PWINFO_TRNORIGDATE';
+        eCclasse.PWINFO_TRNORIGNSU          :  Result := 'PWINFO_TRNORIGNSU';
+        eCclasse.PWINFO_TRNORIGAUTH         :  Result := 'PWINFO_TRNORIGAUTH';
+        eCclasse.PWINFO_LANGUAGE            :  Result := 'PWINFO_LANGUAGE';
+        eCclasse.PWINFO_TRNORIGTIME         :  Result := 'PWINFO_TRNORIGTIME';
+        eCclasse.PWPTI_RESULT               :  Result := 'PWPTI_RESULT';
+        eCclasse.PWINFO_CARDENTMODE         :  Result := 'PWINFO_CARDENTMODE';
+        eCclasse.PWINFO_CARDPARCPAN         :  Result := 'PWINFO_CARDPARCPAN';
+        eCclasse.PWINFO_CHOLDVERIF          :  Result := 'PWINFO_CHOLDVERIF';
+        eCclasse.PWINFO_MERCHADDDATA1       :  Result := 'PWINFO_MERCHADDDATA1';
+        eCclasse.PWINFO_MERCHADDDATA2       :  Result := 'PWINFO_MERCHADDDATA2';
+        eCclasse.PWINFO_MERCHADDDATA3       :  Result := 'PWINFO_MERCHADDDATA3';
+        eCclasse.PWINFO_MERCHADDDATA4       :  Result := 'PWINFO_MERCHADDDATA4';
+        eCclasse.PWINFO_PNDAUTHSYST         :  Result := 'PWINFO_PNDAUTHSYST';
+        eCclasse.PWINFO_PNDVIRTMERCH        :  Result := 'PWINFO_PNDVIRTMERCH';
+        eCclasse.PWINFO_PNDAUTLOCREF        :  Result := 'PWINFO_PNDAUTLOCREF';
+        eCclasse.PWINFO_PNDAUTEXTREF        :  Result := 'PWINFO_PNDAUTEXTREF';
+        eCclasse.PWINFO_DUEAMNT             :  Result := 'PWINFO_DUEAMNT';
+        eCclasse.PWINFO_READJUSTEDAMNT      :  Result := 'PWINFO_READJUSTEDAMNT';
+        else
+        begin
+          Result := 'PWINFO_XXX';
+        end;
+
+      end;
+
+
+      end;
 
 
 

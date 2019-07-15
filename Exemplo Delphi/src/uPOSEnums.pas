@@ -3,7 +3,7 @@
 // unit:   uPOSEnums
 // Classe: TPOSEnums
 //
-// Data de criação  :  04/07/2019
+// Data de criação  :  10/07/2019
 // Autor            :
 // Descrição        :
 //
@@ -11,7 +11,6 @@
 unit uPOSEnums;
 
 interface
-
 
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, System.StrUtils, system.AnsiStrings,
@@ -35,7 +34,7 @@ const
 
   PGWEBLIBTEST_VERSION = '1.0.0';
   PGWEBLIBTEST_AUTDEV  = 'AUTOMACAO DE SISTEMAS';
-  PGWEBLIBTEST_AUTNAME = 'PAYGOTESTE';
+  PGWEBLIBTEST_AUTNAME = 'TestePOSPaygo';
   PGWEBLIBTEST_AUTCAP  = '15';
   PGWEBLIBTEST_AUTHTECHUSER  = 'PAYGOTESTE';
 
@@ -101,6 +100,7 @@ const
   PTICNF_PRINTERR = 2; // Erro na impressora, desfazer a transação
   PTICNF_DISPFAIL = 3; // Erro com o mecanismo dispensador, desfazer a transação
   PTICNF_OTHERERR = 4; // Outro erro, desfazer a transação.
+
 
 
 //==========================================================================================
@@ -210,6 +210,27 @@ const
   Outros = 128;
 
 
+//==========================================================================================
+// Status do Terminal
+//==========================================================================================
+
+  PTISTAT_IDLE = 0;        // Terminal está on-line e aguardando por comandos.
+  PTISTAT_BUSY = 1;        // Terminal está on-line, porém ocupado processando um comando
+  PTISTAT_NOCONN = 2;      // Terminal está offline.
+  PTISTAT_WAITRECON = 3;   // Terminal está off-line. A transação continua sendo executada e
+                           // após sua finalização, o terminal tentará efetuar a reconexão
+                           // automaticamente.
+
+
+
+//==========================================================================================
+//
+//==========================================================================================
+   WInputH:Integer = 550;
+   WInputV:Integer = 140;
+
+
+
 
   Constructor Create;    // declaração do metodo construtor
 
@@ -223,6 +244,7 @@ const
 
 var
 eCclasse:TCPOSEnums;
+
 
 
 
