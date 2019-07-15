@@ -3,7 +3,9 @@
 
 ### Funcionalidades implementadas neste exemplo:
  
- 
+  - Inicialização - Configura Biblioteca de Integração.
+  - Conexão com POS.
+  - Identificação do terminal conectado.
   
 ### Pré-requisitos
   - Delphi 
