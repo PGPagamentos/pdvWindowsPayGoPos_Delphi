@@ -6,7 +6,7 @@
   - Inicialização - Configura Biblioteca de Integração.
   - Conexão com POS.
   - Identificação do terminal conectado.
-  
+  - Menu
 ### Pré-requisitos
   - Delphi 
   - Windows
