@@ -3,7 +3,7 @@
      unit:   POSPGWLib
      Classe: TPOSPGWLib
 
-     Data de criação  :  11/07/2019
+     Data de criação  :  12/07/2019
      Autor            :
      Descrição        :
    }
@@ -94,7 +94,8 @@ Type
     appCompany:string;
     appVersion:string;
     appWorkingPath:string;
-
+    appCapabilities:string;
+    appuiAutoDiscSec:UInt16;
 
     WszTerminalId :AnsiString;
     WszModel : AnsiString;
@@ -111,10 +112,12 @@ Type
     function NovaConexao:Integer;
     function PrintResultParams(WterminalID:AnsiString):Integer;
     function pszGetInfoDescription(wIdentificador:Integer):string;
+    function PrintReturnDescription(iReturnCode:Integer; pszDspMsg:string):Integer;
     function Finalizar:Integer;
     //
     function ConexaoExemplo:Integer;
     function Cancelamento:Integer;
+    function MandaMemo(Descr:string):integer;
 
 end;
 
@@ -240,10 +243,6 @@ end;
 //===============================================================================================
   function PTI_CheckStatus(pszTerminalId:  AnsiString; var piStatus:SHORT; pszModel:AnsiString;
                            pszMAC:AnsiString; pszSerNo:AnsiString; var piRet:SHORT):Int16; stdCall; External 'PTI_DLL.dll';
-
-//  function PTI_CheckStatus(pszTerminalId:  AnsiString; var piStatus:SHORT; pszModel:AnsiString;
-//                           pszMAC:AnsiString; pszSerNo:AnsiString; var piRet:SHORT):Int16; stdCall; External 'PTI_DLL.dll';
-
 
 //==============================================================================================
   {
@@ -433,11 +432,6 @@ end;
                     PTIRET_SECURITYERR   A função foi rejeitada por questões de segurança.
    }
 //===============================================================================================
-{  function PTI_GetData (pszTerminalId:AnsiString; pszPrompt:AnsiString; pszFormat:AnsiString; uiLenMin:UInt16;
-                        uiLenMax:UInt16; fFromLef:BOOL; fAlpha:BOOL; fMask:BOOL;
-                        uiTimeOutSec:UInt16; var pszData:AnsiString; uiCaptureLine:UInt16; var piRet:SHORT):Int16; stdCall; External 'PTI_DLL.dll';
- }
-
   function PTI_GetData (pszTerminalId:AnsiString; pszPrompt:AnsiString; pszFormat:AnsiString; uiLenMin:UInt16;
                         uiLenMax:UInt16; fFromLef:BOOL; fAlpha:BOOL; fMask:BOOL;
                         uiTimeOutSec:UInt16; var pszData:PSZ_GetpszData; uiCaptureLine:UInt16; var piRet:SHORT):Int16; stdCall; External 'PTI_DLL.dll';
@@ -864,7 +858,7 @@ end;
 
 implementation
 
-uses  uLib02;
+uses  uLib02, Principal;
 
 
 var
@@ -875,7 +869,6 @@ var
    szModel: PSZ_GetpszModel;
    szMAC: PSZ_GetpszMAC;
    szSerNum: PSZ_GetpszSerNum;
-   pszData: PSZ_GetpszData;
 
    szValue: PSZ_GetpszValue;
 
@@ -886,6 +879,7 @@ var
 function TPOSPGWLib.Cancelamento: Integer;
 begin
 
+   Exit;
 
 
 end;
@@ -951,7 +945,99 @@ end;
 
 
 function TPOSPGWLib.ConexaoExemplo: Integer;
+var
+ ret : SHORT;
+ key : SHORT;
+ status : SHORT;
+ puiSelection:ShortInt;
+ iRet: Int16;
+ WpszData: AnsiString;
+ IRetorno:Integer;
+ I:Integer;
+ caminho:string;
+
 begin
+
+// ********************
+//
+// ********************
+
+     key := 99;
+     ret := 99;
+     status := 99;
+     puiSelection := -1;
+
+
+
+
+
+     I := 0;
+
+
+     while I < 10 do
+     begin
+
+
+         ret := 99;
+
+         PTI_ConnectionLoop(szTerminalId, szModel, szMAC, szSerNum, Ret);
+
+
+         if(Ret = -2016) then   // PTIRET_NEWCONN
+            begin
+
+
+               WszTerminalId := szTerminalId[0].pszTerminalId;
+               WszModel      := szModel[0].pszModel;
+               WszMAC        := szMAC[0].pszMAC;
+               WszSerNum     := szSerNum[0].pszSerNum;
+
+
+               result := Ret;
+
+               Break;
+
+               Exit;
+
+            end;
+
+
+
+
+        Sleep(300);
+
+     end;
+
+
+     // Mostra ao usuário o identificador do terminal que conectou:
+     PTI_Display(WszTerminalId, 'TERMINAL: '  + WszTerminalId +   ' CONECTADO', ret);
+
+     // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+     PTI_WaitKey(WszTerminalId, 5, key, ret);
+
+     // Consulta informações do terminal através da função PTI_CheckStatus:
+     PTI_CheckStatus(WszTerminalId, status, WszModel, WszMAC, WszSerNum, ret);
+
+     // Mostra ao usuário os dados do Terminal obtidos através da função PTI_CheckStatus:
+     PTI_Display(WszTerminalId, 'SERIAL: ' + WszSerNum + chr(13) + 'MAC: ' + WszMAC + chr(13) + 'MODELO: ' + WszModel + chr(13) +'Status: ' + IntToStr(status), ret);
+
+     // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+     PTI_WaitKey(WszTerminalId, 5, key, ret);
+
+
+
+     Sleep(300);
+
+
+     // Mostra ao usuário que o Terminal será desconectado
+     PTI_Display(WszTerminalId, 'Desconectar ', ret);
+
+     // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+     PTI_WaitKey(WszTerminalId, 5, key, ret);
+
+     // Desconecta Terminal
+     PTI_Disconnect(WszTerminalId, 0);
+
 
 
 
@@ -985,6 +1071,7 @@ function TPOSPGWLib.Init: Integer;
 var
  ret : SHORT;
  caminho:string;
+ retorno:string;
 begin
 
     currentNumberOfTerminals := 0;
@@ -994,22 +1081,75 @@ begin
     maxNumberOfTerminals := 50;
     msgIdle := 'APLICACAO TESTE';
     appCompany := 'NTK Solutions';
-    appVersion := 'Aplicacao exemplo 1.0';
+    appVersion := 'Aplicacao exemplo ' + POSenums.PGWEBLIBTEST_VERSION;
+    appCapabilities := '63';
+    appuiAutoDiscSec := 0;
 
 
-    PTI_Init(appCompany, appVersion, '24', appWorkingPath, appListeningPort, maxNumberOfTerminals,msgIdle, 0, ret);
+    PTI_Init(appCompany, appVersion, appCapabilities, appWorkingPath, appListeningPort, maxNumberOfTerminals,msgIdle, appuiAutoDiscSec, ret);
+    //PTI_Init(appCompany, appVersion, '24', appWorkingPath, appListeningPort, maxNumberOfTerminals,msgIdle, 0, ret);
 
     if (ret  <>  POSenums.PTIRET_OK) then
         begin
-            ShowMessage('ERRO AO INICIAR DLL: ' + IntToStr(ret));
+              MandaMemo('Erro na Inicialização');
+              MandaMemo('');
+              PrintReturnDescription(ret, '');
+              MandaMemo('');
+              Exit;
         end;
 
-     Result := ret;
+
+    MandaMemo('PTI_Init ');
+
+    MandaMemo('');
+
+    MandaMemo('pszPOS_Company......: ' + appCompany);
+    MandaMemo('pszPOS_Version......: ' + appVersion);
+    MandaMemo('pszPOS_Capabilities.: ' + appCapabilities);
+    MandaMemo('pszDataFolder.......: ' + appWorkingPath);
+    MandaMemo('uiTCP_Port..........: ' + IntToStr(appListeningPort));
+    MandaMemo('uiMaxTerminals......: ' + IntToStr(maxNumberOfTerminals));
+    MandaMemo('pszWaitMsg..........: ' + msgIdle);
+    MandaMemo('uiAutoDiscSec.......: ' + IntToStr(appuiAutoDiscSec));
+
+    MandaMemo('');
+
+    PrintReturnDescription(ret, '');
+
+
+
+
+    Result := ret;
 
 
 end;
 
 
+
+
+
+function TPOSPGWLib.MandaMemo(Descr:string): integer;
+begin
+
+
+    if (FPrincipal.Memo1.Visible = False) then
+       begin
+         FPrincipal.Memo1.Visible := True;
+       end;
+         FPrincipal.Memo1.Lines.Add(Descr);
+
+    Result := 0;
+
+
+end;
+
+
+
+
+//=================================================
+//  Inicia Uma Nova Conexão
+//
+//=================================================
 
 
 function TPOSPGWLib.NovaConexao: Integer;
@@ -1020,22 +1160,20 @@ var
  puiSelection:ShortInt;
  iRet: Int16;
  WpszData: AnsiString;
+ pszData: PSZ_GetpszData;
 
 begin
-
-     // ShowMessage('Nova Conexao');
 
      key := 99;
      ret := 99;
      status := 99;
      puiSelection := -1;
 
-    // ShowMessage('TERMINAL ' + WszTerminalId + ' CONECTADO');
-
      //Mostra ao usuário o identificador do terminal que conectou:
      PTI_Display(WszTerminalId, 'TERMINAL '  + WszTerminalId +   chr(13) +  ' CONECTADO', ret);
 
-     // ShowMessage('TERMINAL ' + WszTerminalId + ' CONECTADO');
+     MandaMemo('');
+     MandaMemo('Terminal Conectado: ' + WszTerminalId );
 
 
      // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
@@ -1048,20 +1186,72 @@ begin
      PTI_Display(WszTerminalId, 'SERIAL: ' + WszSerNum + chr(13) + 'MAC: ' + WszMAC + chr(13) + 'MODELO: ' + WszModel + chr(13) +'Status: ' + IntToStr(status), ret);
      // PTI_Display(WszTerminalId, 'SERIAL: ' + WszSerNum + chr(13) + 'MAC: ' + WszMAC + chr(13) + 'MODELO: ' + WszModel + 'Status: ' + IntToStr(status), ret);
 
+     MandaMemo('Serial: ' + WszSerNum);
+     MandaMemo('MAC   : ' + WszMAC);
+     MandaMemo('Modelo: ' + WszModel);
+
+
+
      // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+     PTI_WaitKey(WszTerminalId, 5, key, ret);
+
+     // Mostra ao usuário Tecla Pressionada
+     PTI_Display(WszTerminalId, 'Tecla Pressionada ' + IntToStr(key), ret);
+
+     MandaMemo('');
+     MandaMemo('Tecla Pressionada: '  + IntToStr(key) );
+
+     // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+     PTI_WaitKey(WszTerminalId, 5, key, ret);
+
+     // Inicia função de menu:
+     PTI_StartMenu(WszTerminalId, ret);
+
+     MandaMemo('');
+     MandaMemo('Inicia Função de Menu - PTI_StartMenu: ' );
+     MandaMemo('');
+     MandaMemo('OPCAO 1');
+     MandaMemo('OPCAO 2');
+
+     // Adiciona opção 1 do menu:
+     PTI_AddMenuOption(WszTerminalId, 'OPCAO 1', ret);
+     // Adiciona opção 2 ao menu:
+     PTI_AddMenuOption(WszTerminalId, 'OPCAO 2', ret);
+     // Executa o menu:
+     PTI_ExecMenu(WszTerminalId, 'SELECIONE A OPCAO', 30, puiSelection, ret);
+
+//     ShowMessage('ccc ' + IntToStr(puiSelection));
+
+     if(puiSelection = 190)then
+        begin
+           //Mostra para o usuário que nenhuma opção foi selecionada:
+           PTI_Display(WszTerminalId, 'NENHUMA OPCAO' + chr(13) + 'SELECIONADA', ret);
+        end
+     else
+        begin
+           //Mostra para o usuário a opção selecionada por ele:
+           PTI_Display(WszTerminalId, 'OPCAO SELECIONADA ' + IntToStr(puiSelection), ret);
+        end;
+
+     MandaMemo('Opção Selecionada ' + IntToStr(puiSelection));
+     MandaMemo('');
+
+
+     //Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
      PTI_WaitKey(WszTerminalId, 5, key, ret);
 
 
 
+     MandaMemo('');
+     MandaMemo('Terminal Desconectado - PTI_Disconnect');
+     MandaMemo('');
+
+
+     PTI_Disconnect(WszTerminalId, 0);
 
 
 
-
-    PTI_Disconnect(WszTerminalId, 0);
-
-
-
-    result := Ret;
+     result := Ret;
 
 
 end;
@@ -1131,6 +1321,152 @@ begin
 
 
 end;
+
+
+
+
+//=====================================================================================*\
+  {
+   Funcao     :  PrintReturnDescription
+
+   Descricao  :  Esta função recebe um código PTIRET_XXX e imprime na tela a sua descrição.
+
+   Entradas   :  iResult :   Código de resultado da transação (PTIRET_XXX).
+
+   Saidas     :  nao ha.
+
+   Retorno    :  nao ha.
+  }
+//=====================================================================================*/
+function TPOSPGWLib.PrintReturnDescription(iReturnCode:Integer;
+  pszDspMsg:string):Integer;
+  var
+    I : integer;
+  begin
+
+       case iReturnCode of
+
+
+         POSenums.PTIRET_OK:
+           begin
+            MandaMemo('PTIRET_OK');
+           end;
+
+         POSenums.PTIRET_INVPARAM:
+           begin
+            MandaMemo('PTIRET_INVPARAM');
+           end;
+
+         POSenums.PTIRET_NOCONN:
+           begin
+            MandaMemo('PTIRET_NOCONN');
+           end;
+
+         POSenums.PTIRET_BUSY:
+           begin
+            MandaMemo('PTIRET_BUSY');
+           end;
+
+         POSenums.PTIRET_TIMEOUT:
+           begin
+            MandaMemo('PTIRET_TIMEOUT');
+           end;
+
+         POSenums.PTIRET_CANCEL:
+           begin
+            MandaMemo('PTIRET_CANCEL');
+           end;
+
+         POSenums.PTIRET_NODATA:
+           begin
+            MandaMemo('PTIRET_NODATA');
+           end;
+
+         POSenums.PTIRET_BUFOVRFLW:
+           begin
+            MandaMemo('PTIRET_BUFOVRFLW');
+           end;
+
+         POSenums.PTIRET_SOCKETERR:
+           begin
+            MandaMemo('PTIRET_SOCKETERR');
+           end;
+
+         POSenums.PTIRET_WRITEERR:
+           begin
+            MandaMemo('PTIRET_WRITEERR');
+           end;
+
+         POSenums.PTIRET_EFTERR:
+           begin
+            MandaMemo('PTIRET_EFTERR');
+           end;
+
+         POSenums.PTIRET_INTERNALERR:
+           begin
+            MandaMemo('PTIRET_INTERNALERR');
+           end;
+
+         POSenums.PTIRET_PROTOCOLERR:
+           begin
+            MandaMemo('PTIRET_PROTOCOLERR');
+           end;
+
+         POSenums.PTIRET_SECURITYERR:
+           begin
+            MandaMemo('PTIRET_SECURITYERR');
+           end;
+
+         POSenums.PTIRET_PRINTERR:
+           begin
+            MandaMemo('PTIRET_PRINTERR');
+           end;
+
+         POSenums.PTIRET_NOPAPER:
+           begin
+            MandaMemo('PTIRET_NOPAPER');
+           end;
+
+         POSenums.PTIRET_NEWCONN:
+           begin
+            MandaMemo('PTIRET_NEWCONN');
+           end;
+
+         POSenums.PTIRET_NONEWCONN:
+           begin
+            MandaMemo('PTIRET_NONEWCONN');
+           end;
+
+         POSenums.PTIRET_NOTSUPPORTED:
+           begin
+            MandaMemo('PTIRET_NOTSUPPORTED');
+           end;
+
+         POSenums.PTIRET_CRYPTERR:
+           begin
+            MandaMemo('PTIRET_CRYPTERR');
+           end;
+
+      else
+
+         begin
+           begin
+            MandaMemo('OUTRO ERRO: ' + IntToStr(iReturnCode));
+           end;
+
+         end;
+
+
+
+
+       end;
+
+
+
+  end;
+
+
+
 
 
 

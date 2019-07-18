@@ -3,7 +3,7 @@
 // unit:   uPOSEnums
 // Classe: TPOSEnums
 //
-// Data de criação  :  10/07/2019
+// Data de criação  :  01/07/2019
 // Autor            :
 // Descrição        :
 //
@@ -32,7 +32,7 @@ const
 // Definição da versão do aplicativo
 //==========================================================================================
 
-  PGWEBLIBTEST_VERSION = '1.0.0';
+  PGWEBLIBTEST_VERSION = '1.0.1';
   PGWEBLIBTEST_AUTDEV  = 'AUTOMACAO DE SISTEMAS';
   PGWEBLIBTEST_AUTNAME = 'TestePOSPaygo';
   PGWEBLIBTEST_AUTCAP  = '15';

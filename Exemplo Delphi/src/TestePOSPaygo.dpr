@@ -2,7 +2,7 @@ program TestePOSPaygo;
 
 uses
   Vcl.Forms,
-  Principal in 'Principal.pas' {Form1},
+  Principal in 'Principal.pas' {FPrincipal},
   uPOSPGWLib in 'uPOSPGWLib.pas',
   uPOSEnums in 'uPOSEnums.pas',
   uLib in 'uLib.pas',
@@ -13,6 +13,6 @@ uses
 begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
-  Application.CreateForm(TForm1, Form1);
+  Application.CreateForm(TFPrincipal, FPrincipal);
   Application.Run;
 end.

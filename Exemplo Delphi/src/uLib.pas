@@ -3,7 +3,7 @@
    unit:   uLib
    Classe: uLib
 
-   Data de criação  : 11/07/2019
+   Data de criação  : 20/05/2019
    Autor            :
    Descrição        : Lib contendo estruturas Auxiliares da Aplicação
    }
@@ -37,6 +37,8 @@ x:Integer;
 implementation
 
 
+
+
 //==========================================================
   {
     Auxliar para capturar tamanho dos caracteres de InputBox
@@ -53,6 +55,7 @@ begin
   Result.X := Result.X div 52;
 
 end;
+
 
 //==========================================================
   {
@@ -164,6 +167,9 @@ function KeyIsDown(const Key: integer): boolean;
 begin
   Result := GetKeyState(Key) and 128 > 0;
 end;
+
+
+
 
 
 //==========================================================

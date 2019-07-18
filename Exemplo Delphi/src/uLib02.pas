@@ -2,7 +2,7 @@
    unit:   uLib02
    Classe: TCustomInputBox
 
-   Data de criação  : 12/07/2019
+   Data de criação  : 18/06/2019
    Autor            :
    Descrição        : Lib contendo estruturas Auxiliares da Aplicação
    }
@@ -25,6 +25,7 @@ type
   public
     class function InputBox(const ACaption, APrompt, ADefault: string; x,y:integer): string;
     class function GetAveCharSize(Canvas: TCanvas): TPoint;
+
   end;
 
 
@@ -58,6 +59,8 @@ begin
 
 end;
 
+
+
 class procedure TCustomInputBox.EditKeyPress(Sender: TObject; var Key: Char);
 var
    Texto, Texto2: string;
@@ -86,6 +89,8 @@ begin
   GetTextExtentPoint(Canvas.Handle, Buffer, 52, TSize(Result));
   Result.X := Result.X div 52;
 end;
+
+
 
 //==========================================================
   {

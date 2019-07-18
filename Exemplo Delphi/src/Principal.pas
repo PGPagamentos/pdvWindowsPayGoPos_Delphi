@@ -54,12 +54,10 @@ TAguardaConexao = class(TThread)
 
 
 type
-  TForm1 = class(TForm)
+  TFPrincipal = class(TForm)
     MainMenu1: TMainMenu;
     Venda1: TMenuItem;
     Cancelamento1: TMenuItem;
-    Venda2: TMenuItem;
-    N1: TMenuItem;
     N3: TMenuItem;
     DesconectarPOS1: TMenuItem;
     N4: TMenuItem;
@@ -69,13 +67,13 @@ type
     Label1: TLabel;
     Label3: TLabel;
     ConectarAutomao1: TMenuItem;
-    N5: TMenuItem;
     N2: TMenuItem;
-    Menu1: TMenuItem;
+    Memo1: TMemo;
     procedure Button1Click(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure Button2Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure ConectarAutomao1Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -100,11 +98,10 @@ type
   end;
 
 var
-  Form1: TForm1;
+  FPrincipal: TFPrincipal;
 
   iRet:Integer;
 
-//  PWPOSLib : TPOSPGWLib;
 
 
 implementation
@@ -142,8 +139,6 @@ begin
   inherited;
 
   POSPGWLib  := TPOSPGWLib.Create;
-
-
 
   POSPGWLib.WszTerminalId := WszTerminalId;
   POSPGWLib.WszModel      := WszModel;
@@ -204,13 +199,8 @@ begin
 
          Retorno := POSPGWLib.Conexao();
 
-         //ShowMessage('Terminal: ' + POSPGWLib.WszTerminalId + ' Modelo: ' + POSPGWLib.WszModel);
-
          // Nova Thread
          vThreadNovaConexao       := TNovaConexao.Create(POSPGWLib.WszTerminalId, POSPGWLib.WszModel, POSPGWLib.WszMAC, POSPGWLib.WszSerNum);
-
-         //Wthr := vThreadNovaConexao.CurrentThread.ThreadID;
-         //ShowMessage('Identificação da Nova Thread: ' + IntToStr(wthr));
 
          // Inicia
          vThreadNovaConexao.Start;
@@ -238,7 +228,7 @@ end;
 
 
 
-procedure TForm1.Button1Click(Sender: TObject);
+procedure TFPrincipal.Button1Click(Sender: TObject);
 var
  vThreadAguarde : TAguardaConexao;
  caminho:string;
@@ -254,7 +244,6 @@ begin
     // Init esta no create do Form
     //=============================
 
-
      // Criar Thread de Aguarde
      vThreadAguarde       := TAguardaConexao.Create();
 
@@ -266,7 +255,7 @@ begin
 end;
 
 
-procedure TForm1.Button2Click(Sender: TObject);
+procedure TFPrincipal.Button2Click(Sender: TObject);
 begin
 
   POSPGWLib.Finalizar();
@@ -277,14 +266,26 @@ begin
 
 end;
 
-constructor TForm1.Create;
+procedure TFPrincipal.ConectarAutomao1Click(Sender: TObject);
+var
+ vThreadAguarde : TAguardaConexao;
+ caminho:string;
+ pasta:string;
+ Retorno:Integer;
+ Wthr:Integer;
+begin
+
+
+end;
+
+constructor TFPrincipal.Create;
 begin
 
     POSenums   := TCPOSEnums.Create;
 
 end;
 
-destructor TForm1.Destroy;
+destructor TFPrincipal.Destroy;
 begin
 
   inherited;
@@ -293,14 +294,14 @@ end;
 
 
 
-procedure TForm1.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TFPrincipal.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
 
     Application.Terminate;
 
 end;
 
-procedure TForm1.FormCreate(Sender: TObject);
+procedure TFPrincipal.FormCreate(Sender: TObject);
 var
  caminho:string;
  pasta:string;
@@ -329,8 +330,6 @@ begin
           begin
             Exit;
           end;
-
-
 
 
       //=================================================
