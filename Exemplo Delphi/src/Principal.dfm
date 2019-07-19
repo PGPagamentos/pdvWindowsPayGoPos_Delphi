@@ -77,9 +77,20 @@ object FPrincipal: TFPrincipal
       Caption = 'Opera'#231#245'es'
       object ConectarAutomao1: TMenuItem
         Caption = 'Conectar Automa'#231#227'o'
-        OnClick = ConectarAutomao1Click
       end
       object N2: TMenuItem
+        Caption = '-'
+      end
+      object Menu1: TMenuItem
+        Caption = 'Menu'
+      end
+      object N5: TMenuItem
+        Caption = '-'
+      end
+      object Venda2: TMenuItem
+        Caption = 'Venda'
+      end
+      object N1: TMenuItem
         Caption = '-'
       end
       object Cancelamento1: TMenuItem

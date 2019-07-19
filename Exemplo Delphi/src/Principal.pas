@@ -58,6 +58,8 @@ type
     MainMenu1: TMainMenu;
     Venda1: TMenuItem;
     Cancelamento1: TMenuItem;
+    Venda2: TMenuItem;
+    N1: TMenuItem;
     N3: TMenuItem;
     DesconectarPOS1: TMenuItem;
     N4: TMenuItem;
@@ -67,13 +69,14 @@ type
     Label1: TLabel;
     Label3: TLabel;
     ConectarAutomao1: TMenuItem;
+    N5: TMenuItem;
     N2: TMenuItem;
+    Menu1: TMenuItem;
     Memo1: TMemo;
     procedure Button1Click(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure Button2Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
-    procedure ConectarAutomao1Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -102,6 +105,7 @@ var
 
   iRet:Integer;
 
+//  PWPOSLib : TPOSPGWLib;
 
 
 implementation
@@ -127,6 +131,7 @@ begin
    FAux := '';
 
 
+
 end;
 
 
@@ -139,6 +144,7 @@ begin
   inherited;
 
   POSPGWLib  := TPOSPGWLib.Create;
+
 
   POSPGWLib.WszTerminalId := WszTerminalId;
   POSPGWLib.WszModel      := WszModel;
@@ -199,8 +205,11 @@ begin
 
          Retorno := POSPGWLib.Conexao();
 
+         //ShowMessage('Terminal: ' + POSPGWLib.WszTerminalId + ' Modelo: ' + POSPGWLib.WszModel);
+
          // Nova Thread
          vThreadNovaConexao       := TNovaConexao.Create(POSPGWLib.WszTerminalId, POSPGWLib.WszModel, POSPGWLib.WszMAC, POSPGWLib.WszSerNum);
+
 
          // Inicia
          vThreadNovaConexao.Start;
@@ -237,15 +246,42 @@ var
  Wthr:Integer;
 begin
 
+
     Button1.Enabled := False;
     Button2.Enabled := True;
 
-    //=============================
-    // Init esta no create do Form
-    //=============================
+    //=========================================
+    // Init Configura Biblioteca de Integração
+    //=========================================
+
+    POSPGWLib  := TPOSPGWLib.Create;
+
+    POSPGWLib.pasta := 'PayGoPOS';
+
+
+    Caminho := ExtractFilePath(ParamStr(0)) + POSPGWLib.pasta;
+
+    if not DirectoryExists(Caminho) then
+       begin
+         if not CreateDir(Caminho) then
+            begin
+              ForceDirectories(caminho);
+            end;
+       end;
+
+       Retorno := POSPGWLib.Init();
+       if Retorno <> POSenums.PTIRET_OK then
+          begin
+            Exit;
+          end;
+
+      //===============
 
      // Criar Thread de Aguarde
      vThreadAguarde       := TAguardaConexao.Create();
+
+     //Wthr := vThreadAguarde.CurrentThread.ThreadID;
+     //ShowMessage('Identificação da Thread: ' + IntToStr(wthr));
 
      // Iniciar
      vThreadAguarde.Start;
@@ -262,18 +298,6 @@ begin
 
   Button2.Enabled := false;
   Button1.Enabled := True;
-
-
-end;
-
-procedure TFPrincipal.ConectarAutomao1Click(Sender: TObject);
-var
- vThreadAguarde : TAguardaConexao;
- caminho:string;
- pasta:string;
- Retorno:Integer;
- Wthr:Integer;
-begin
 
 
 end;
@@ -310,26 +334,6 @@ var
 begin
 
 
-    POSPGWLib  := TPOSPGWLib.Create;
-
-    POSPGWLib.pasta := 'PayGoPOS';
-
-
-    Caminho := ExtractFilePath(ParamStr(0)) + POSPGWLib.pasta;
-
-    if not DirectoryExists(Caminho) then
-       begin
-         if not CreateDir(Caminho) then
-            begin
-              ForceDirectories(caminho);
-            end;
-       end;
-
-       Retorno := POSPGWLib.Init();
-       if Retorno <> POSenums.PTIRET_OK then
-          begin
-            Exit;
-          end;
 
 
       //=================================================

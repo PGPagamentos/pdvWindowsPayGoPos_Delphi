@@ -3,7 +3,7 @@
      unit:   POSPGWLib
      Classe: TPOSPGWLib
 
-     Data de criação  :  12/07/2019
+     Data de criação  :  02/07/2019
      Autor            :
      Descrição        :
    }
@@ -243,6 +243,10 @@ end;
 //===============================================================================================
   function PTI_CheckStatus(pszTerminalId:  AnsiString; var piStatus:SHORT; pszModel:AnsiString;
                            pszMAC:AnsiString; pszSerNo:AnsiString; var piRet:SHORT):Int16; stdCall; External 'PTI_DLL.dll';
+
+//  function PTI_CheckStatus(pszTerminalId:  AnsiString; var piStatus:SHORT; pszModel:AnsiString;
+//                           pszMAC:AnsiString; pszSerNo:AnsiString; var piRet:SHORT):Int16; stdCall; External 'PTI_DLL.dll';
+
 
 //==============================================================================================
   {
@@ -863,14 +867,18 @@ uses  uLib02, Principal;
 
 var
 
+   //PWEnums : TCPOSEnums;
+
    sziRet : PSZ_GetiRet;
 
    szTerminalId:  PSZ_GetpszTerminalId;
    szModel: PSZ_GetpszModel;
    szMAC: PSZ_GetpszMAC;
    szSerNum: PSZ_GetpszSerNum;
+  // pszData: PSZ_GetpszData;
 
    szValue: PSZ_GetpszValue;
+   //pszData: AnsiString;
 
 
 
@@ -879,7 +887,6 @@ var
 function TPOSPGWLib.Cancelamento: Integer;
 begin
 
-   Exit;
 
 
 end;
@@ -905,6 +912,7 @@ begin
      while I < 10000 do
      begin
 
+        // I := I +1;
 
          ret := 99;
 
@@ -1091,11 +1099,7 @@ begin
 
     if (ret  <>  POSenums.PTIRET_OK) then
         begin
-              MandaMemo('Erro na Inicialização');
-              MandaMemo('');
-              PrintReturnDescription(ret, '');
-              MandaMemo('');
-              Exit;
+            // ShowMessage('ERRO AO INICIAR DLL: ' + IntToStr(ret));
         end;
 
 
@@ -1146,10 +1150,7 @@ end;
 
 
 
-//=================================================
-//  Inicia Uma Nova Conexão
-//
-//=================================================
+
 
 
 function TPOSPGWLib.NovaConexao: Integer;
@@ -1160,21 +1161,25 @@ var
  puiSelection:ShortInt;
  iRet: Int16;
  WpszData: AnsiString;
+ wLimpapszdata:PSZ_GetpszData;
  pszData: PSZ_GetpszData;
 
 begin
+
+     // ShowMessage('Nova Conexao');
 
      key := 99;
      ret := 99;
      status := 99;
      puiSelection := -1;
 
+    // ShowMessage('TERMINAL ' + WszTerminalId + ' CONECTADO');
+
      //Mostra ao usuário o identificador do terminal que conectou:
      PTI_Display(WszTerminalId, 'TERMINAL '  + WszTerminalId +   chr(13) +  ' CONECTADO', ret);
 
      MandaMemo('');
      MandaMemo('Terminal Conectado: ' + WszTerminalId );
-
 
      // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
      PTI_WaitKey(WszTerminalId, 5, key, ret);
@@ -1184,13 +1189,10 @@ begin
 
      // Mostra ao usuário os dados obtidos através da função PTI_CheckStatus:
      PTI_Display(WszTerminalId, 'SERIAL: ' + WszSerNum + chr(13) + 'MAC: ' + WszMAC + chr(13) + 'MODELO: ' + WszModel + chr(13) +'Status: ' + IntToStr(status), ret);
-     // PTI_Display(WszTerminalId, 'SERIAL: ' + WszSerNum + chr(13) + 'MAC: ' + WszMAC + chr(13) + 'MODELO: ' + WszModel + 'Status: ' + IntToStr(status), ret);
 
      MandaMemo('Serial: ' + WszSerNum);
      MandaMemo('MAC   : ' + WszMAC);
      MandaMemo('Modelo: ' + WszModel);
-
-
 
      // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
      PTI_WaitKey(WszTerminalId, 5, key, ret);
@@ -1200,6 +1202,8 @@ begin
 
      MandaMemo('');
      MandaMemo('Tecla Pressionada: '  + IntToStr(key) );
+
+
 
      // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
      PTI_WaitKey(WszTerminalId, 5, key, ret);
@@ -1233,19 +1237,79 @@ begin
            PTI_Display(WszTerminalId, 'OPCAO SELECIONADA ' + IntToStr(puiSelection), ret);
         end;
 
+
      MandaMemo('Opção Selecionada ' + IntToStr(puiSelection));
      MandaMemo('');
-
 
      //Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
      PTI_WaitKey(WszTerminalId, 5, key, ret);
 
 
 
+     //====
+
+
+          // Inicia função de menu para CPF para Captura de Dados:
+
+     ret := 99;
+     puiSelection := -1;
+
+     PTI_ClearKey(WszTerminalId, ret);
+
+     PTI_StartMenu(WszTerminalId, ret);
+
+     MandaMemo('');
+     MandaMemo('Inicia Função de Menu P/ CPF - PTI_StartMenu: ' );
+     MandaMemo('');
+     MandaMemo('Captura de CPF Mascarado ');
+     MandaMemo('Captura de CPF Não mascarado');
+
+     // Adiciona opção 1 do menu:
+     PTI_AddMenuOption(WszTerminalId, 'CPF C/Mascara', ret);
+     // Adiciona opção 2 ao menu:
+     PTI_AddMenuOption(WszTerminalId, 'CPF S/Mascara', ret);
+     // Executa o menu:
+     PTI_ExecMenu(WszTerminalId, 'SELECIONE A OPCAO', 30, puiSelection, ret);
+
+
+     if(puiSelection = 190)then
+        begin
+           //Mostra para o usuário que nenhuma opção foi selecionada:
+           PTI_Display(WszTerminalId, 'NENHUMA OPCAO' + chr(13) + 'SELECIONADA', ret);
+        end
+     else
+        begin
+           //Mostra para o usuário a opção selecionada por ele:
+           PTI_Display(WszTerminalId, 'OPCAO SELECIONADA ' + IntToStr(puiSelection), ret);
+        end;
+
+
+     if(puiSelection = 0) then
+        begin
+           iRet :=  PTI_GetData(WszTerminalId, 'CPF C/Mascara', '@@@.@@@.@@@-@@', 11, 11, false, false, true, 30, pszData, 2, ret);
+        end
+     else
+        begin
+           iRet :=  PTI_GetData(WszTerminalId, 'CPF S/Mascara', '@@@.@@@.@@@-@@', 11, 11, true, false, false, 30, pszData, 2, ret);
+        end;
+
+
+
+
+     WpszData := pszData[0].pszData;
+
+     MandaMemo('');
+     MandaMemo('CPF Capturado: ' + WpszData);
+
+
+
+     //Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+      PTI_WaitKey(WszTerminalId, 5, key, ret);
+
+
      MandaMemo('');
      MandaMemo('Terminal Desconectado - PTI_Disconnect');
      MandaMemo('');
-
 
      PTI_Disconnect(WszTerminalId, 0);
 
@@ -1317,6 +1381,8 @@ begin
    end;
 
 
+   //Impressão de texto:
+   //ShowMessage('Texto : ' + WTexto);
    PTI_Print(WterminalID, WTexto, ret);
 
 
