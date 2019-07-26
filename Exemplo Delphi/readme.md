@@ -6,10 +6,10 @@
   - Inicialização - Configura Biblioteca de Integração.
   - Conexão com POS.
   - Identificação do terminal conectado.
-  - Menu
-  - Captura de Dados com e sem mascara
-  - Emissão de QR Code e Codigo Barras
-  - Fluxo de Venda Completo
+  - Menu.
+  - Captura de Dados com e sem mascara.
+  - Emissão de QR Code e Codigo Barras.
+  - Fluxo de Venda Completo.
   
 ### Pré-requisitos
   - Delphi 
