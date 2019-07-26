@@ -75,34 +75,10 @@ object FPrincipal: TFPrincipal
     Top = 16
     object Venda1: TMenuItem
       Caption = 'Opera'#231#245'es'
-      object ConectarAutomao1: TMenuItem
-        Caption = 'Conectar Automa'#231#227'o'
-      end
-      object N2: TMenuItem
-        Caption = '-'
-      end
-      object Menu1: TMenuItem
-        Caption = 'Menu'
-      end
-      object N5: TMenuItem
-        Caption = '-'
-      end
-      object Venda2: TMenuItem
-        Caption = 'Venda'
-      end
-      object N1: TMenuItem
-        Caption = '-'
-      end
       object Cancelamento1: TMenuItem
         Caption = 'Cancelamento'
       end
       object N3: TMenuItem
-        Caption = '-'
-      end
-      object DesconectarPOS1: TMenuItem
-        Caption = 'Desconectar POS'
-      end
-      object N4: TMenuItem
         Caption = '-'
       end
     end

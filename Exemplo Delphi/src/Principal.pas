@@ -22,9 +22,7 @@ TNovaConexao = class(TThread)
   protected
     //procedure Execute; override;
   public
-    //constructor Create(AMemo: TMemo); reintroduce;
     constructor Create(NszTerminalId:AnsiString; NszModel:AnsiString; NszMAC: AnsiString; NszSerNum: AnsiString);
-    //constructor Create(); reintroduce;
     procedure Execute; override;
     procedure Sincronizar;
   end;
@@ -34,7 +32,6 @@ Type
 TAguardaConexao = class(TThread)
   private
      FAux: String;
-     //FMemo: TMemo;
      wTipo: string;
 
      terminalId: AnsiString;
@@ -58,20 +55,12 @@ type
     MainMenu1: TMainMenu;
     Venda1: TMenuItem;
     Cancelamento1: TMenuItem;
-    Venda2: TMenuItem;
-    N1: TMenuItem;
     N3: TMenuItem;
-    DesconectarPOS1: TMenuItem;
-    N4: TMenuItem;
     Button2: TButton;
     Button1: TButton;
     Panel1: TPanel;
     Label1: TLabel;
     Label3: TLabel;
-    ConectarAutomao1: TMenuItem;
-    N5: TMenuItem;
-    N2: TMenuItem;
-    Menu1: TMenuItem;
     Memo1: TMemo;
     procedure Button1Click(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -105,8 +94,6 @@ var
 
   iRet:Integer;
 
-//  PWPOSLib : TPOSPGWLib;
-
 
 implementation
 
@@ -123,13 +110,10 @@ begin
     WszMAC        := NszMAC;
     WszSerNum     := NszSerNum;
 
-
-
    // Libera da memoria o objeto após terminar.
    Self.FreeOnTerminate := True;
 
    FAux := '';
-
 
 
 end;
@@ -182,6 +166,11 @@ begin
 end;
 
 
+//=======================================
+{
+     Thread que Aguarda Conexão
+}
+//=======================================
 procedure TAguardaConexao.Execute;
 var
   I: Integer;
@@ -200,23 +189,17 @@ begin
       while I < 10 do
       begin
 
-
          POSPGWLib  := TPOSPGWLib.Create;
 
          Retorno := POSPGWLib.Conexao();
 
-         //ShowMessage('Terminal: ' + POSPGWLib.WszTerminalId + ' Modelo: ' + POSPGWLib.WszModel);
-
-         // Nova Thread
+         // Nova Thread para execeutar Processo
          vThreadNovaConexao       := TNovaConexao.Create(POSPGWLib.WszTerminalId, POSPGWLib.WszModel, POSPGWLib.WszMAC, POSPGWLib.WszSerNum);
-
 
          // Inicia
          vThreadNovaConexao.Start;
 
-
          Sleep(300);
-
 
       end;
 
@@ -247,6 +230,7 @@ var
 begin
 
 
+    Cancelamento1.Enabled := False;
     Button1.Enabled := False;
     Button2.Enabled := True;
 
@@ -277,14 +261,14 @@ begin
 
       //===============
 
-     // Criar Thread de Aguarde
+     // Criar Thread Para Aguardar Conexões
      vThreadAguarde       := TAguardaConexao.Create();
 
-     //Wthr := vThreadAguarde.CurrentThread.ThreadID;
-     //ShowMessage('Identificação da Thread: ' + IntToStr(wthr));
 
-     // Iniciar
+     // Iniciar Thread
      vThreadAguarde.Start;
+
+
 
 
 
@@ -295,7 +279,8 @@ procedure TFPrincipal.Button2Click(Sender: TObject);
 begin
 
   POSPGWLib.Finalizar();
-
+  //ConectarAutomao1.Enabled := True;
+  Cancelamento1.Enabled := True;
   Button2.Enabled := false;
   Button1.Enabled := True;
 
@@ -314,8 +299,6 @@ begin
 
   inherited;
 end;
-
-
 
 
 procedure TFPrincipal.FormClose(Sender: TObject; var Action: TCloseAction);
@@ -346,5 +329,3 @@ begin
 end;
 
 end.
-
-

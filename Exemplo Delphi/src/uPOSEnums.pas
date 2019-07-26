@@ -32,13 +32,11 @@ const
 // Definição da versão do aplicativo
 //==========================================================================================
 
-  PGWEBLIBTEST_VERSION = '1.0.2';
+  PGWEBLIBTEST_VERSION = '1.0.3';
   PGWEBLIBTEST_AUTDEV  = 'AUTOMACAO DE SISTEMAS';
   PGWEBLIBTEST_AUTNAME = 'TestePOSPaygo';
   PGWEBLIBTEST_AUTCAP  = '15';
   PGWEBLIBTEST_AUTHTECHUSER  = 'PAYGOTESTE';
-
-
 
 
 //==========================================================================================
