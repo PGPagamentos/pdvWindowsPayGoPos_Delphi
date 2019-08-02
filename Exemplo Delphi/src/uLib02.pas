@@ -2,7 +2,7 @@
    unit:   uLib02
    Classe: TCustomInputBox
 
-   Data de criação  : 18/06/2019
+   Data de criação  : 05/07/2019
    Autor            :
    Descrição        : Lib contendo estruturas Auxiliares da Aplicação
    }
@@ -14,7 +14,6 @@ interface
 uses
   Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, System.StrUtils, system.AnsiStrings,
   Vcl.Graphics,Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls, Vcl.Mask, System.Types, System.TypInfo;
-
 
 type
 

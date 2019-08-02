@@ -22,7 +22,6 @@ function vInputBox(const ACaption, APrompt, ADefault: string; x,y: integer): str
 
 function KeyIsDown(const Key: integer): boolean;
 
-
 function GetMAveCharSize(Canvas: TCanvas): TPoint;
 function vMInputQuery(const ACaption, APrompt: string; var Value: string; x,y:integer; Tipo:Integer): Boolean;
 //function vMInputBox(const ACaption, APrompt, ADefault: string; x,y: integer): string;
@@ -35,8 +34,6 @@ x:Integer;
 
 
 implementation
-
-
 
 
 //==========================================================
@@ -162,7 +159,6 @@ begin
 end;
 
 
-
 function KeyIsDown(const Key: integer): boolean;
 begin
   Result := GetKeyState(Key) and 128 > 0;
@@ -186,7 +182,6 @@ begin
   for I := 0 to 25 do Buffer[I + 26] := Chr(I + Ord('a'));
   GetTextExtentPoint(Canvas.Handle, Buffer, 52, TSize(Result));
   Result.X := Result.X div 52;
-
 
 
 end;

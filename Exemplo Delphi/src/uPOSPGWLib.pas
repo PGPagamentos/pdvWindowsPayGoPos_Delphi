@@ -5,7 +5,7 @@
 
      Data de criação  :  02/07/2019
      Autor            :
-     Descrição        :
+     Descrição        :  Metodos de Interoperabilidade com DLL
    }
 //************************************************************************************
 unit uPOSPGWLib;
@@ -71,10 +71,8 @@ Type
 
 
 
-
   TPOSPGWLib = class
   private
-  //private
     { private declarations }
   protected
     { protected declarations }
@@ -110,6 +108,8 @@ Type
     function Init:Integer;
     function Conexao:Integer;
     function NovaConexao:Integer;
+    function ConexaoCancela:Integer;
+    function NovaConexaoCancela:Integer;
     function PrintResultParams(WterminalID:AnsiString):Integer;
     function pszGetInfoDescription(wIdentificador:Integer):string;
     function PrintReturnDescription(iReturnCode:Integer; pszDspMsg:string):Integer;
@@ -121,9 +121,6 @@ Type
     function Desconectar:Integer;
 
 end;
-
-
-
 
 
 //===============================================================================================*\
@@ -201,7 +198,6 @@ end;
 
 
 
-
 //===============================================================================================
   {
      Function      :  PTI_CheckStatus
@@ -244,9 +240,6 @@ end;
 //===============================================================================================
   function PTI_CheckStatus(pszTerminalId:  AnsiString; var piStatus:SHORT; pszModel:AnsiString;
                            pszMAC:AnsiString; pszSerNo:AnsiString; var piRet:SHORT):Int16; stdCall; External 'PTI_DLL.dll';
-
-//  function PTI_CheckStatus(pszTerminalId:  AnsiString; var piStatus:SHORT; pszModel:AnsiString;
-//                           pszMAC:AnsiString; pszSerNo:AnsiString; var piRet:SHORT):Int16; stdCall; External 'PTI_DLL.dll';
 
 
 //==============================================================================================
@@ -437,11 +430,6 @@ end;
                     PTIRET_SECURITYERR   A função foi rejeitada por questões de segurança.
    }
 //===============================================================================================
-{  function PTI_GetData (pszTerminalId:AnsiString; pszPrompt:AnsiString; pszFormat:AnsiString; uiLenMin:UInt16;
-                        uiLenMax:UInt16; fFromLef:BOOL; fAlpha:BOOL; fMask:BOOL;
-                        uiTimeOutSec:UInt16; var pszData:AnsiString; uiCaptureLine:UInt16; var piRet:SHORT):Int16; stdCall; External 'PTI_DLL.dll';
- }
-
   function PTI_GetData (pszTerminalId:AnsiString; pszPrompt:AnsiString; pszFormat:AnsiString; uiLenMin:UInt16;
                         uiLenMax:UInt16; fFromLef:BOOL; fAlpha:BOOL; fMask:BOOL;
                         uiTimeOutSec:UInt16; var pszData:PSZ_GetpszData; uiCaptureLine:UInt16; var piRet:SHORT):Int16; stdCall; External 'PTI_DLL.dll';
@@ -864,8 +852,6 @@ end;
 
 
 
-
-
 implementation
 
 uses  uLib02, Principal;
@@ -873,29 +859,31 @@ uses  uLib02, Principal;
 
 var
 
-   //PWEnums : TCPOSEnums;
-
    sziRet : PSZ_GetiRet;
 
    szTerminalId:  PSZ_GetpszTerminalId;
    szModel: PSZ_GetpszModel;
    szMAC: PSZ_GetpszMAC;
    szSerNum: PSZ_GetpszSerNum;
-  // pszData: PSZ_GetpszData;
 
    szValue: PSZ_GetpszValue;
-   //pszData: AnsiString;
 
 
 
+//=============================================
+ {
+    Função de Cancelamento de Venda
+ }
+//=============================================
 function TPOSPGWLib.Cancelamento: Integer;
 begin
+
 
 end;
 
 
 //====================================
-// Somente Exemplo de Conexão
+// Pesquisa por POS conectado
 //====================================
 function TPOSPGWLib.Conexao: Integer;
 var
@@ -918,7 +906,11 @@ begin
      while I < 10000 do
      begin
 
-        // I := I +1;
+         // Indica Finalizar Thread
+         if (FPrincipal.Wfinalizar = 1) then
+             begin
+                Exit;
+             end;
 
          ret := 99;
 
@@ -927,7 +919,6 @@ begin
 
          if(Ret = -2016) then   // PTIRET_NEWCONN
             begin
-
 
                WszTerminalId := szTerminalId[0].pszTerminalId;
                WszModel      := szModel[0].pszModel;
@@ -945,7 +936,6 @@ begin
 
 
 
-
         Sleep(300);
 
      end;
@@ -956,32 +946,80 @@ begin
 end;
 
 
-
-//=============================================
-//  Conexão apenas de exemplo
-//=============================================
-function TPOSPGWLib.ConexaoExemplo: Integer;
+//=========================================================
+// Procura por Conexão do Terminal informado para Cancelar
+//=========================================================
+function TPOSPGWLib.ConexaoCancela: Integer;
 var
+ iRet:Int16;
+ IRetorno:Integer;
  ret : SHORT;
  key : SHORT;
- status : SHORT;
- puiSelection:ShortInt;
- iRet: Int16;
- WpszData: AnsiString;
- IRetorno:Integer;
+ status: SHORT;
  I:Integer;
+ WTerminal:string;
+ falta:string;
+ iRetErro:Integer;
  caminho:string;
+ WtoTerminal:Integer;
+ x:Integer;
 
 begin
-
-// ********************
-//
-// ********************
 
      key := 99;
      ret := 99;
      status := 99;
-     puiSelection := -1;
+
+     I := 0;
+
+     WTerminal := '';
+
+     while I < 10 do
+     begin
+
+         falta := 'Informe o ID do ponto de captura do POS:';
+         WTerminal:= vInputBox('Informar: ',falta,'',POSenums.WInputH,POSenums.WInputV);
+
+         if (WTerminal = 'CANCELA') then
+             begin
+                Result := 1;
+                Exit;
+             end;
+
+         if (WTerminal = '') then
+             begin
+               ShowMessage('Escolha ID Válido!');
+               Continue;
+             end;
+
+         iRetErro := 0;
+         for X := 1 to Length(WTerminal) do begin
+             if not (WTerminal[X] in ['0'..'9']) then begin
+               ShowMessage('Escolha ID Numerico!');
+               iRetErro := 1;
+               Break;
+             end;
+         end;
+
+         if (iRetErro = 1) then
+             begin
+               Continue;
+             end;
+
+         Break;
+
+     end;
+
+
+     I := 0;
+     WtoTerminal := 0;
+
+     MandaMemo(' ');
+     MandaMemo(' Aguardando Conexão Solicitada Terminal: ' + WTerminal);
+     MandaMemo(' ');
+
+
+     isRunning := True;
 
 
      I := 0;
@@ -995,19 +1033,39 @@ begin
 
          PTI_ConnectionLoop(szTerminalId, szModel, szMAC, szSerNum, Ret);
 
-
-         if(Ret = -2016) then   // PTIRET_NEWCONN
+         if(Ret =   POSenums.PTIRET_NEWCONN) then   // Nova conexão
             begin
 
+               WtoTerminal := WtoTerminal +1;
+
+               if (WtoTerminal > 50) then
+                   begin
+                     ShowMessage('Terminal Informado Inexistente');
+                     result := Ret;
+                     Break;
+                     Exit;
+                   end;
+
+               // Recupera dados da Conexão
                WszTerminalId := szTerminalId[0].pszTerminalId;
                WszModel      := szModel[0].pszModel;
                WszMAC        := szMAC[0].pszMAC;
                WszSerNum     := szSerNum[0].pszSerNum;
 
+
+
+               if (WTerminal <> WszTerminalId) then
+                   begin
+                     Sleep(300);
+                     Continue;
+                   end;
+
+
                result := Ret;
 
                Break;
 
+               Exit;
 
             end;
 
@@ -1017,48 +1075,14 @@ begin
      end;
 
 
-     key := 99;
-     ret := 99;
-     status := 99;
-     puiSelection := -1;
-
-     // Mostra ao usuário o identificador do terminal que conectou:
-     PTI_Display(WszTerminalId, 'TERMINAL '  + WszTerminalId +   chr(13) +  ' CONECTADO', ret);
-
-     MandaMemo('');
-     MandaMemo('Terminal Conectado: ' + WszTerminalId );
-
-     // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
-     PTI_WaitKey(WszTerminalId, 5, key, ret);
-
-     // Consulta informações do terminal através da função PTI_CheckStatus:
-     PTI_CheckStatus(WszTerminalId, status, WszModel, WszMAC, WszSerNum, ret);
-
-     // Mostra ao usuário os dados obtidos através da função PTI_CheckStatus:
-     PTI_Display(WszTerminalId, 'SERIAL: ' + WszSerNum + chr(13) + 'MAC: ' + WszMAC + chr(13) + 'MODELO: ' + WszModel + chr(13) +'Status: ' + IntToStr(status), ret);
-
-     MandaMemo('Serial: ' + WszSerNum);
-     MandaMemo('MAC   : ' + WszMAC);
-     MandaMemo('Modelo: ' + WszModel);
-
-     // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
-     PTI_WaitKey(WszTerminalId, 5, key, ret);
+end;
 
 
-    // Sleep(300);
-
-
-    // Mostra ao usuário que o Terminal será desconectado
-    PTI_Display(WszTerminalId, 'Desconectar ', ret);
-
-    // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
-    PTI_WaitKey(WszTerminalId, 5, key, ret);
-
-    MandaMemo('');
-    MandaMemo('Terminal Desconectado - PTI_Disconnect');
-    MandaMemo('');
-
-    PTI_Disconnect(WszTerminalId, 0);
+//=============================================
+//  Conexão apenas de exemplo
+//=============================================
+function TPOSPGWLib.ConexaoExemplo: Integer;
+begin
 
 
 end;
@@ -1101,19 +1125,30 @@ begin
 end;
 
 
-
+//==============================================
+  {
+      Finaliza uso da Biblioteca
+  }
+//==============================================
 function TPOSPGWLib.Finalizar: Integer;
 begin
 
 
     MandaMemo('');
-    MandaMemo('Encerra o uso da biblioteca de integração');
+    MandaMemo('Uso da biblioteca de integração foi Encerrado');
+    FPrincipal.Wfinalizar := 1;
+    Application.ProcessMessages;
 
     PTI_End();
 
 
 end;
 
+//==============================================
+  {
+      Inicializa Biblioteca
+  }
+//==============================================
 function TPOSPGWLib.Init: Integer;
 var
  ret : SHORT;
@@ -1134,7 +1169,6 @@ begin
 
 
     PTI_Init(appCompany, appVersion, appCapabilities, appWorkingPath, appListeningPort, maxNumberOfTerminals,msgIdle, appuiAutoDiscSec, ret);
-    //PTI_Init(appCompany, appVersion, '24', appWorkingPath, appListeningPort, maxNumberOfTerminals,msgIdle, 0, ret);
 
     if (ret  <>  POSenums.PTIRET_OK) then
         begin
@@ -1168,9 +1202,11 @@ begin
 end;
 
 
-
-
-
+//==============================================
+  {
+      Atualiza Log da Aplicação
+  }
+//==============================================
 function TPOSPGWLib.MandaMemo(Descr:string): integer;
 begin
 
@@ -1276,7 +1312,6 @@ begin
      PTI_WaitKey(WszTerminalId, 5, key, ret);
 
 
-
      //================================
 
      // Inicia função de menu para CPF/Captura de Dados:
@@ -1325,7 +1360,7 @@ begin
      WpszData := pszData[0].pszData;
 
      MandaMemo('');
-     MandaMemo('CPF Capturado: ' + WpszData);
+     MandaMemo('CPF Capturado: ' + WpszData + ' - Terminal: ' + WszTerminalId);
      MandaMemo('');
 
 
@@ -1345,6 +1380,11 @@ begin
         WpszData :=  'Numero Informado: ' + pszData[0].pszData;
      // Impressão do Numero:
         PTI_Print(WszTerminalId, WpszData, ret);
+
+        MandaMemo('');
+        MandaMemo('Numero Informado: ' + WpszData + ' - Terminal: ' + WszTerminalId);
+        MandaMemo('');
+
      // Avança Papel na Impressora
         PTI_PrnFeed (WszTerminalId, ret);
 
@@ -1421,11 +1461,12 @@ begin
     //Insere parâmetro "moeda":   986 = Real
      PTI_EFT_AddParam(WszTerminalId, eCclasse.PWINFO_CURRENCY, '986', ret);
 
-    //Insere parâmetro "valor":
+    //Recupera Valor Total Digitado;
      WpszData := pszData[0].pszData;
-     MandaMemo('Valor Informado: '  + WpszData);
+     MandaMemo('Valor Informado: '  + WpszData + ' - Terminal: ' + WszTerminalId);
      MandaMemo('');
 
+     // Adiciona Parametro Valor Total
      PTI_EFT_AddParam(WszTerminalId, eCclasse.PWINFO_TOTAMNT, WpszData, ret);
 
     //Executa transação:
@@ -1456,6 +1497,7 @@ begin
 
               PTI_Beep(WszTerminalId, 0, ret);
 
+              // Limpa buffer de teclas pressionadas
               PTI_ClearKey(WszTerminalId, ret);
 
 
@@ -1491,7 +1533,7 @@ begin
 
 
     MandaMemo('');
-    MandaMemo('Terminal Desconectado - PTI_Disconnect');
+    MandaMemo('Terminal: ' + WszTerminalId + ' Desconectado.');
     MandaMemo('');
 
     PTI_Disconnect(WszTerminalId, 0);
@@ -1504,7 +1546,139 @@ begin
 end;
 
 
+//======================================================
+  {
+        Cancelamento
+  }
+//======================================================
+function TPOSPGWLib.NovaConexaoCancela: Integer;
+var
+  StrTagNFCe: string;
+  falta:string;
+  iRet: Int16;
+  WpszData: AnsiString;
+  RET:SHORT;
+  WTerminal:string;
+  WValor:string;
+  WReferencia:string;
+  status : SHORT;
+  key : SHORT;
+  I:Integer;
+  puiSelection:ShortInt;
+  WData:string;
+  WtoTerminal: Integer;
+  iRetErro : Integer;
+  X:Integer;
+begin
 
+     // Cancelamento de venda
+
+     key := 99;
+     ret := 99;
+     status := 99;
+
+
+
+     //Mostra ao usuário o identificador do terminal que conectou:
+     PTI_Display(WszTerminalId, 'TERMINAL '  + WszTerminalId +   chr(13) +  ' CONECTADO', ret);
+
+     MandaMemo('');
+     MandaMemo('Terminal Conectado: ' + WszTerminalId );
+
+     Application.ProcessMessages;
+
+     // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+     PTI_WaitKey(WszTerminalId, 5, key, ret);
+
+     // Consulta informações do terminal através da função PTI_CheckStatus:
+     PTI_CheckStatus(WszTerminalId, status, WszModel, WszMAC, WszSerNum, ret);
+
+
+   if ((ret = POSenums.PTIRET_OK) and (status = POSenums.PTISTAT_IDLE)) then
+       begin
+
+             // Mostra ao usuário os dados obtidos através da função PTI_CheckStatus:
+             PTI_Display(WszTerminalId, 'SERIAL: ' + WszSerNum + chr(13) + 'MAC: ' + WszMAC + chr(13) + 'MODELO: ' + WszModel + chr(13) +'Status: ' + IntToStr(status), ret);
+
+             MandaMemo('Serial: ' + WszSerNum);
+             MandaMemo('MAC   : ' + WszMAC);
+             MandaMemo('Modelo: ' + WszModel);
+
+             // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+             PTI_WaitKey(WszTerminalId, 5, key, ret);
+
+            //Inicia transação de Cancelamento:
+             PTI_EFT_Start(WszTerminalId, eCclasse.PWOPER_SALEVOID, ret);
+
+            //Executa transação:
+              PTI_EFT_Exec(WszTerminalId, ret);
+
+
+            if (ret = 0)then           // Transação autorizada
+               begin
+
+
+                    // Mostra valores armazenados em todos PWINFO_
+                    PrintResultParams(WszTerminalId);
+
+
+                    // Impressão do comprovante da transação:
+                    PTI_EFT_PrintReceipt(WszTerminalId, 3, ret);
+
+                    PTI_Beep(WszTerminalId, 0, ret);
+
+                    // Exemplo de menu:
+                    PTI_StartMenu(WszTerminalId, ret);
+                    PTI_AddMenuOption(WszTerminalId, 'SIM', ret);
+                    PTI_AddMenuOption(WszTerminalId, 'NAO', ret);
+                    PTI_ExecMenu(WszTerminalId, 'CONFIRMAR TRANSACAO?', 30, puiSelection, ret);
+
+                    if (puiSelection = 0)then
+                       begin
+                        PTI_EFT_Confirm(WszTerminalId, eCclasse.PTICNF_SUCCESS, ret);
+                       end
+                    else
+                       begin
+                        PTI_EFT_Confirm(WszTerminalId, eCclasse.PTICNF_OTHERERR, ret);
+                       end;
+
+               end
+            else
+               begin
+                    MandaMemo('');
+                    //WReferencia := PrintReturnDescription(ret);
+                    MandaMemo('Operação Foi Cancelada ou Falhou !');
+                    PrintReturnDescription(ret,'');
+                    PTI_Beep(WszTerminalId, 1, ret);
+               end;
+
+
+
+
+
+            MandaMemo('');
+            MandaMemo('Terminal: ' + WszTerminalId + ' Desconectado.');
+            MandaMemo('');
+
+            PTI_Disconnect(WszTerminalId, 0);
+
+
+       end;
+
+
+
+
+
+   Sleep(300);
+
+
+   Result := 0;
+
+   Exit;
+
+
+
+end;
 
 
 //=====================================================================================*\
@@ -1574,8 +1748,6 @@ begin
 
 
 end;
-
-
 
 
 //=====================================================================================*\
@@ -1719,9 +1891,6 @@ function TPOSPGWLib.PrintReturnDescription(iReturnCode:Integer;
 
 
   end;
-
-
-
 
 
 
