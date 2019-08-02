@@ -10,6 +10,7 @@
   - Captura de Dados com e sem mascara.
   - Emissão de QR Code e Codigo Barras.
   - Fluxo de Venda Completo.
+  - Cancelamento
   
 ### Pré-requisitos
   - Delphi 
