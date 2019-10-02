@@ -49,50 +49,9 @@ TAguardaConexao = class(TThread)
   end;
 
 
-Type
-TAguardaConexaoCancela = class(TThread)
-  private
-     FAux: String;
-     wTipo: string;
-
-     terminalId: AnsiString;
-     mac: AnsiString;
-     model: AnsiString;
-     serialNumber: AnsiString;
-
-  protected
-    //procedure Execute; override;
-  public
-    //constructor Create(AMemo: TMemo); reintroduce;
-    constructor Create(); reintroduce;
-    procedure Execute; override;
-    procedure Sincronizar;
-  end;
-
-
-Type
-TNovaConexaoCancela = class(TThread)
-  private
-     FAux: String;
-     FMemo: TMemo;
-     wTipo: string;
-     WszTerminalId :AnsiString;
-     WszModel : AnsiString;
-     WszMAC: AnsiString;
-     WszSerNum: AnsiString;
-  protected
-    //procedure Execute; override;
-  public
-    constructor Create(NszTerminalId:AnsiString; NszModel:AnsiString; NszMAC: AnsiString; NszSerNum: AnsiString);
-    procedure Execute; override;
-    procedure Sincronizar;
-  end;
-
 
 type
   TFPrincipal = class(TForm)
-    MainMenu1: TMainMenu;
-    Venda1: TMenuItem;
     Button2: TButton;
     Button1: TButton;
     Panel1: TPanel;
@@ -100,13 +59,11 @@ type
     Label3: TLabel;
     Memo1: TMemo;
     Button3: TButton;
-    CancelaVenda1: TMenuItem;
     procedure Button1Click(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure Button2Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure Button3Click(Sender: TObject);
-    procedure CancelaVenda1Click(Sender: TObject);
   private
     { Private declarations }
   public
@@ -141,8 +98,9 @@ var
 implementation
 
 {$R *.dfm}
-
-
+//==============================================
+// Método Construtor da Thread de Novas conexões
+//==============================================
 constructor TNovaConexao.Create(NszTerminalId:AnsiString; NszModel:AnsiString; NszMAC: AnsiString; NszSerNum: AnsiString);
 begin
 
@@ -160,8 +118,9 @@ begin
 
 
 end;
-
-
+//==============================================
+// Executa Thread de Novas conexões
+//==============================================
 procedure TNovaConexao.Execute;
 var
   I: Integer;
@@ -186,131 +145,17 @@ begin
 
 end;
 
-// Atualiza o Form
+//==============================================
+// Atualizar aqui o Form caso seja necessário
+//==============================================
 procedure TNovaConexao.Sincronizar;
 begin
- // FMemo.Lines.Add(Self.FAux);
+   // FMemo.Lines.Add(Self.FAux);
 end;
 
-
-
-constructor TAguardaConexaoCancela.Create;
-begin
-
-   inherited Create(True);
-
-   // Libera da memoria o objeto após terminar.
-   Self.FreeOnTerminate := True;
-
-   FAux := '';
-
-end;
-
-//=================================================
-{
-     Thread que Aguarda Conexão do Cancelamento
-}
-//=================================================
-procedure TAguardaConexaoCancela.Execute;
-var
-  I: Integer;
-  T:Integer;
-  vThreadNovaConexaoCancela : TNovaConexaoCancela;
-  POSPGWLib  : TPOSPGWLib;
-  Retorno:Integer;
-  Wthr:Integer;
-
-begin
-  inherited;
-
-
-      I := 0;
-
-
-         POSPGWLib  := TPOSPGWLib.Create;
-
-         Retorno := POSPGWLib.ConexaoCancela();
-         if (Retorno = 1) then
-            begin
-              POSPGWLib.MandaMemo('');
-              POSPGWLib.MandaMemo('Cancelamento Abortado pela Aplicação.');
-              FPrincipal.Button2.Enabled := True;
-              FPrincipal.Button1.Enabled := True;
-              FPrincipal.CancelaVenda1.Enabled := True;
-
-              Exit;
-            end;
-
-
-         // Nova Thread para executar Processo
-         vThreadNovaConexaoCancela       := TNovaConexaoCancela.Create(POSPGWLib.WszTerminalId, POSPGWLib.WszModel, POSPGWLib.WszMAC, POSPGWLib.WszSerNum);
-
-         // Inicia
-         vThreadNovaConexaoCancela.Start;
-
-
-
- end;
-
-
-procedure TAguardaConexaoCancela.Sincronizar;
-begin
- //FMemo.Lines.Add(Self.FAux);
-end;
-
-constructor TNovaConexaoCancela.Create(NszTerminalId:AnsiString; NszModel:AnsiString; NszMAC: AnsiString; NszSerNum: AnsiString);
-begin
-
-   inherited Create(True);
-
-    WszTerminalId := NszTerminalId;
-    WszModel      := NszModel;
-    WszMAC        := NszMAC;
-    WszSerNum     := NszSerNum;
-
-   // Libera da memoria o objeto após terminar.
-   Self.FreeOnTerminate := True;
-
-   FAux := '';
-
-
-end;
-
-
-procedure TNovaConexaoCancela.Execute;
-var
-  I: Integer;
-  POSPGWLib  : TPOSPGWLib;
-
-begin
-  inherited;
-
-  POSPGWLib  := TPOSPGWLib.Create;
-
-
-  POSPGWLib.WszTerminalId := WszTerminalId;
-  POSPGWLib.WszModel      := WszModel;
-  POSPGWLib.WszMAC        := WszMAC;
-  POSPGWLib.WszSerNum     := WszSerNum;
-
-
-  POSPGWLib.NovaConexaoCancela();
-
-
-
-end;
-
-// Atualiza o Form
-procedure TNovaConexaoCancela.Sincronizar;
-begin
- // FMemo.Lines.Add(Self.FAux);
-end;
-
-
-
-
-
-
+//==================================================
+// Método Construtor da Thread que Aguarda conexões
+//==============================================
 constructor TAguardaConexao.Create;
 begin
 
@@ -320,14 +165,13 @@ begin
    Self.FreeOnTerminate := True;
 
    FAux := '';
-//   FMemo := AMemo;
 
 end;
 
 
 //=======================================
 {
-     Thread que Aguarda Conexão
+     Thread que Aguarda Novas Conexões
 }
 //=======================================
 procedure TAguardaConexao.Execute;
@@ -374,15 +218,17 @@ begin
 
 
 
-
-
-
+//=======================================================
+// Sincronização Thread de Aguardar caso seja necessário
+//==============================================
 procedure TAguardaConexao.Sincronizar;
 begin
  //FMemo.Lines.Add(Self.FAux);
 end;
 
-
+//==============================================
+// Finaliza Thread de Aguardar
+//==============================================
 procedure TAguardaConexao.Terminate;
 begin
 
@@ -391,8 +237,10 @@ begin
 end;
 
 
-
-
+//==========================================
+// Botão Iniciar
+// Inicia Thread que Aguarda Novas Conexões
+//==========================================
 procedure TFPrincipal.Button1Click(Sender: TObject);
 var
  vThreadAguarde : TAguardaConexao;
@@ -404,15 +252,14 @@ begin
 
     Wfinalizar := 0;
 
-    CancelaVenda1.Enabled := False;
     Button1.Enabled := False;
     Button2.Enabled := True;
 
-    //=========================================
-    // Init Configura Biblioteca de Integração
-    //=========================================
-
     POSPGWLib  := TPOSPGWLib.Create;
+
+    //=========================================
+    // Cria Pasta para Log
+    //=========================================
 
     POSPGWLib.pasta := 'PayGoPOS';
 
@@ -426,6 +273,9 @@ begin
               ForceDirectories(caminho);
             end;
        end;
+
+
+       // Metodfo Iniciar Lib
 
        Retorno := POSPGWLib.Init();
        if Retorno <> POSenums.PTIRET_OK then
@@ -448,6 +298,9 @@ begin
 
 end;
 
+//===============================================
+//  Desconecta Thread de Aguardar Novas Conexões
+//===============================================
 
 procedure TFPrincipal.Button2Click(Sender: TObject);
 begin
@@ -459,10 +312,13 @@ begin
 
   Button2.Enabled := false;
   Button1.Enabled := True;
-  CancelaVenda1.Enabled := True;
 
 
 end;
+
+//================================
+// Limpa Log da Aplicação
+//================================
 
 procedure TFPrincipal.Button3Click(Sender: TObject);
 begin
@@ -471,54 +327,9 @@ begin
 
 end;
 
-procedure TFPrincipal.CancelaVenda1Click(Sender: TObject);
-var
- vThreadAguardeCancela : TAguardaConexaoCancela;
- caminho:string;
- pasta:string;
- Retorno:Integer;
-begin
-
-    CancelaVenda1.Enabled := False;
-    Button1.Enabled := False;
-    Button2.Enabled := True;
-
-    //=========================================
-    // Init Configura Biblioteca de Integração
-    //=========================================
-
-    POSPGWLib  := TPOSPGWLib.Create;
-
-    POSPGWLib.pasta := 'PayGoPOS';
-
-
-    Caminho := ExtractFilePath(ParamStr(0)) + POSPGWLib.pasta;
-
-    if not DirectoryExists(Caminho) then
-       begin
-         if not CreateDir(Caminho) then
-            begin
-              ForceDirectories(caminho);
-            end;
-       end;
-
-       Retorno := POSPGWLib.Init();
-       if Retorno <> POSenums.PTIRET_OK then
-          begin
-            Exit;
-          end;
-
-      //===============
-
-     // Criar Thread Para Aguardar Conexões
-     vThreadAguardeCancela       := TAguardaConexaoCancela.Create();
-
-
-     // Iniciar Thread
-     vThreadAguardeCancela.Start;
-
-
-end;
+//================================
+// Construtor de Main
+//================================
 
 constructor TFPrincipal.Create;
 begin
@@ -526,6 +337,10 @@ begin
     POSenums   := TCPOSEnums.Create;
 
 end;
+
+//================================
+// Destrutor de Main
+//================================
 
 destructor TFPrincipal.Destroy;
 begin
@@ -535,7 +350,9 @@ end;
 
 
 
-
+//================================
+// Encerra Aplicação
+//================================
 procedure TFPrincipal.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
 
@@ -543,6 +360,10 @@ begin
 
 end;
 
+
+//==================================================
+// Atualiza Informações de Nome/Versão da Aplicação
+//==================================================
 procedure TFPrincipal.FormCreate(Sender: TObject);
 var
  caminho:string;
@@ -550,9 +371,6 @@ var
  Retorno:Integer;
  Wthr:Integer;
 begin
-
-
-
 
       //=================================================
       //  Atualiza Form Inicial com Dados da Aplicação

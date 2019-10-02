@@ -2,7 +2,7 @@ object FPrincipal: TFPrincipal
   Left = 0
   Top = 0
   Caption = 'Aplica'#231#227'o Teste de Integra'#231#227'o com  POS Paygo'
-  ClientHeight = 485
+  ClientHeight = 505
   ClientWidth = 563
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -10,7 +10,6 @@ object FPrincipal: TFPrincipal
   Font.Height = -11
   Font.Name = 'Tahoma'
   Font.Style = []
-  Menu = MainMenu1
   OldCreateOrder = False
   Position = poScreenCenter
   OnClose = FormClose
@@ -78,16 +77,5 @@ object FPrincipal: TFPrincipal
     Caption = 'Limpar Log'
     TabOrder = 4
     OnClick = Button3Click
-  end
-  object MainMenu1: TMainMenu
-    Left = 448
-    Top = 16
-    object Venda1: TMenuItem
-      Caption = 'Cancelamento'
-      object CancelaVenda1: TMenuItem
-        Caption = 'CancelaVenda'
-        OnClick = CancelaVenda1Click
-      end
-    end
   end
 end

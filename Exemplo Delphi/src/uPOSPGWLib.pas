@@ -108,15 +108,24 @@ Type
     function Init:Integer;
     function Conexao:Integer;
     function NovaConexao:Integer;
-    function ConexaoCancela:Integer;
-    function NovaConexaoCancela:Integer;
+    function menuoperacoes(WTerminal:AnsiString):Integer;
+    function menuprincipal(WTerminal:AnsiString):Integer;
+    function menuimpressao(WTerminal:AnsiString):Integer;
+    function menucaptura(WTerminal:AnsiString):Integer;
+    function menucodigos(WTerminal:AnsiString):Integer;
+    function operacaovenda(WTerminal:AnsiString):Integer;
+    function operacaocancela(WTerminal:AnsiString):Integer;
+    function operacaoadmin(WTerminal:AnsiString):Integer;
+    function confirmacao(Wterminal:AnsiString):Integer;
+   // function ConexaoCancela:Integer;
+   // function NovaConexaoCancela:Integer;
     function PrintResultParams(WterminalID:AnsiString):Integer;
     function pszGetInfoDescription(wIdentificador:Integer):string;
     function PrintReturnDescription(iReturnCode:Integer; pszDspMsg:string):Integer;
     function Finalizar:Integer;
     //
-    function ConexaoExemplo:Integer;
-    function Cancelamento:Integer;
+    //function ConexaoExemplo:Integer;
+    //function Cancelamento:Integer;
     function MandaMemo(Descr:string):integer;
     function Desconectar:Integer;
 
@@ -870,20 +879,9 @@ var
 
 
 
-//=============================================
- {
-    Função de Cancelamento de Venda
- }
-//=============================================
-function TPOSPGWLib.Cancelamento: Integer;
-begin
-
-
-end;
-
 
 //====================================
-// Pesquisa por POS conectado
+// Aguarda Conexão de POS
 //====================================
 function TPOSPGWLib.Conexao: Integer;
 var
@@ -914,10 +912,11 @@ begin
 
          ret := 99;
 
+         // Executa metodo de espera por Nova Conexão
          PTI_ConnectionLoop(szTerminalId, szModel, szMAC, szSerNum, Ret);
 
-
-         if(Ret = -2016) then   // PTIRET_NEWCONN
+         // Nova Conexão encontrada
+         if(Ret = eCclasse.PTIRET_NEWCONN) then
             begin
 
                WszTerminalId := szTerminalId[0].pszTerminalId;
@@ -946,146 +945,56 @@ begin
 end;
 
 
-//=========================================================
-// Procura por Conexão do Terminal informado para Cancelar
-//=========================================================
-function TPOSPGWLib.ConexaoCancela: Integer;
+
+//=======================================================================
+// Confirmação de Transação, usado para Transações pendentes ou com erro
+//=======================================================================
+function TPOSPGWLib.confirmacao(Wterminal: AnsiString): Integer;
 var
- iRet:Int16;
- IRetorno:Integer;
  ret : SHORT;
+ tret: SHORT;
  key : SHORT;
- status: SHORT;
- I:Integer;
- WTerminal:string;
- falta:string;
- iRetErro:Integer;
- caminho:string;
- WtoTerminal:Integer;
- x:Integer;
-
+ status : SHORT;
+ puiSelection:ShortInt;
+ iRet: Int16;
+ WpszData: AnsiString;
+ wLimpapszdata:PSZ_GetpszData;
+ pszData: PSZ_GetpszData;
+ retorno:AnsiString;
 begin
 
-     key := 99;
-     ret := 99;
-     status := 99;
-
-     I := 0;
-
-     WTerminal := '';
-
-     while I < 10 do
-     begin
-
-         falta := 'Informe o ID do ponto de captura do POS:';
-         WTerminal:= vInputBox('Informar: ',falta,'',POSenums.WInputH,POSenums.WInputV);
-
-         if (WTerminal = 'CANCELA') then
-             begin
-                Result := 1;
-                Exit;
-             end;
-
-         if (WTerminal = '') then
-             begin
-               ShowMessage('Escolha ID Válido!');
-               Continue;
-             end;
-
-         iRetErro := 0;
-         for X := 1 to Length(WTerminal) do begin
-             if not (WTerminal[X] in ['0'..'9']) then begin
-               ShowMessage('Escolha ID Numerico!');
-               iRetErro := 1;
-               Break;
-             end;
-         end;
-
-         if (iRetErro = 1) then
-             begin
-               Continue;
-             end;
-
-         Break;
-
-     end;
+        // Limpa buffer de teclas pressionadas
+        PTI_ClearKey(WTerminal, ret);
 
 
-     I := 0;
-     WtoTerminal := 0;
+        //Exemplo de menu:
+        PTI_StartMenu(WTerminal, ret);
+        PTI_AddMenuOption(WTerminal, 'SIM', ret);
+        PTI_AddMenuOption(WTerminal, 'NAO', ret);
+        PTI_ExecMenu(WTerminal, 'CONFIRMA TRANSACAO?', 30, puiSelection, ret);
 
-     MandaMemo(' ');
-     MandaMemo(' Aguardando Conexão Solicitada Terminal: ' + WTerminal);
-     MandaMemo(' ');
+        // Qual foi selecionado
+        if (puiSelection = 0)then
+           begin
+            PTI_EFT_Confirm(WTerminal, eCclasse.PTICNF_SUCCESS, ret);
+            MandaMemo('Transação Confirmada: PTICNF_SUCCESS ');
+           end
+        else
+           begin
+            PTI_EFT_Confirm(WTerminal, eCclasse.PTICNF_OTHERERR, ret);
+            MandaMemo('Transação Confirmada: PTICNF_OTHERERR ');
+           end;
 
-
-     isRunning := True;
-
-
-     I := 0;
-
-
-     while I < 10 do
-     begin
-
-
-         ret := 99;
-
-         PTI_ConnectionLoop(szTerminalId, szModel, szMAC, szSerNum, Ret);
-
-         if(Ret =   POSenums.PTIRET_NEWCONN) then   // Nova conexão
-            begin
-
-               WtoTerminal := WtoTerminal +1;
-
-               if (WtoTerminal > 50) then
-                   begin
-                     ShowMessage('Terminal Informado Inexistente');
-                     result := Ret;
-                     Break;
-                     Exit;
-                   end;
-
-               // Recupera dados da Conexão
-               WszTerminalId := szTerminalId[0].pszTerminalId;
-               WszModel      := szModel[0].pszModel;
-               WszMAC        := szMAC[0].pszMAC;
-               WszSerNum     := szSerNum[0].pszSerNum;
-
-
-
-               if (WTerminal <> WszTerminalId) then
-                   begin
-                     Sleep(300);
-                     Continue;
-                   end;
-
-
-               result := Ret;
-
-               Break;
-
-               Exit;
-
-            end;
-
-
-        Sleep(300);
-
-     end;
 
 
 end;
 
 
-//=============================================
-//  Conexão apenas de exemplo
-//=============================================
-function TPOSPGWLib.ConexaoExemplo: Integer;
-begin
 
 
-end;
+
+
+
 
 
 
@@ -1096,6 +1005,11 @@ begin
 
 end;
 
+
+
+//=============================================
+//  Desconectar Terminal, apenas de exemplo.
+//=============================================
 function TPOSPGWLib.Desconectar: Integer;
 var
  ret : SHORT;
@@ -1118,9 +1032,9 @@ begin
 
 end;
 
+
 destructor TPOSPGWLib.Destroy;
 begin
-
   inherited;
 end;
 
@@ -1133,14 +1047,12 @@ end;
 function TPOSPGWLib.Finalizar: Integer;
 begin
 
-
     MandaMemo('');
     MandaMemo('Uso da biblioteca de integração foi Encerrado');
     FPrincipal.Wfinalizar := 1;
     Application.ProcessMessages;
 
     PTI_End();
-
 
 end;
 
@@ -1210,7 +1122,6 @@ end;
 function TPOSPGWLib.MandaMemo(Descr:string): integer;
 begin
 
-
     if (FPrincipal.Memo1.Visible = False) then
        begin
          FPrincipal.Memo1.Visible := True;
@@ -1219,9 +1130,524 @@ begin
 
     Result := 0;
 
+end;
+
+
+//=================================================
+//  Menu de Captura de dados digitados no terminal
+//=================================================
+function TPOSPGWLib.menucaptura(WTerminal: AnsiString): Integer;
+var
+ ret : SHORT;
+ key : SHORT;
+ status : SHORT;
+ WpszData: AnsiString;
+ wLimpapszdata:PSZ_GetpszData;
+ pszData: PSZ_GetpszData;
+ puiSelection:ShortInt;
+ iRet: Int16;
+ I:Integer;
+ retorno:Integer;
+begin
+
+     I := 0;
+
+     while I < 10 do
+     begin
+
+         key := 99;
+         ret := 99;
+         status := 99;
+         puiSelection := -1;
+         retorno := 0;
+
+         PTI_ClearKey(WTerminal, ret);
+
+         // Inicia função de menu:
+         PTI_StartMenu(WTerminal, ret);
+
+         // Adiciona opção 1 do menu:
+         PTI_AddMenuOption(WTerminal, 'CPF Mascarado', ret);
+         // Adiciona opção 2 ao menu:
+         PTI_AddMenuOption(WTerminal, 'CPF Nao Mascarado', ret);
+         // Adiciona opção 3 ao menu:
+         PTI_AddMenuOption(WTerminal, 'Retornar', ret);
+         // Executa o menu:
+         PTI_ExecMenu(WTerminal, 'SELECIONE A OPCAO', 30, puiSelection, ret);
+
+         //========================================================
+         // Verifica tempo default de espera da conexão(TIMEOUT),
+         // ao esgotar este tempo, a conexão é finalizada!,
+         // mostrando mensagem na tela do POS
+         //========================================================
+         if (ret = POSenums.PTIRET_TIMEOUT) then
+             begin
+               PTI_Display(WTerminal, 'Tempo de Espera' + chr(13) + 'Esgotado(TIMEOUT)', ret);
+               // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+               PTI_WaitKey(WTerminal, 5, key, ret);
+
+               retorno := 1;
+
+               Break;
+
+             end;
+
+
+         // Verifica opção escolhida
+         if(puiSelection = 0) then
+            begin
+               iRet :=  PTI_GetData(WTerminal, 'CPF C/Mascara'+chr(13), '@@@.@@@.@@@-@@', 11, 11, false, false, true, 30, pszData, 2, ret);
+               WpszData := pszData[0].pszData;
+               MandaMemo('');
+               MandaMemo('CPF Com Mascara Capturado: ' + WpszData + ' - Terminal: ' + WTerminal);
+               MandaMemo('');
+               //Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+                PTI_WaitKey(WszTerminalId, 5, key, ret);
+               // Limpa Captura de Dados;
+               pszData := wLimpapszdata;
+            end
+         else if (puiSelection = 1) then
+            begin
+               iRet :=  PTI_GetData(WTerminal, 'CPF S/Mascara'+chr(13), '@@@.@@@.@@@-@@', 11, 11, true, false, false, 30, pszData, 2, ret);
+               WpszData := pszData[0].pszData;
+               MandaMemo('');
+               MandaMemo('CPF S/Mascara Capturado: ' + WpszData + ' - Terminal: ' + WTerminal);
+               MandaMemo('');
+               //Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+                PTI_WaitKey(WTerminal, 5, key, ret);
+               // Limpa Captura de Dados;
+               pszData := wLimpapszdata;
+            end
+         else if (puiSelection = 2) then
+            begin
+               Break;
+            end;
+
+
+     end;
+
+
+     Result := retorno;
 
 end;
 
+//==================================================
+//  Menu de Impressão de Codigo de Barras ou QRCode
+//==================================================
+function TPOSPGWLib.menucodigos(WTerminal: AnsiString): Integer;
+var
+ ret : SHORT;
+ key : SHORT;
+ status : SHORT;
+ WpszData: AnsiString;
+ wLimpapszdata:PSZ_GetpszData;
+ pszData: PSZ_GetpszData;
+ puiSelection:ShortInt;
+ iRet: Int16;
+ I:Integer;
+ retorno:Integer;
+begin
+
+     I := 0;
+
+     while I < 10 do
+     begin
+
+         key := 99;
+         ret := 99;
+         status := 99;
+         puiSelection := -1;
+         retorno := 0;
+
+         PTI_ClearKey(WTerminal, ret);
+
+         // Inicia função de menu:
+         PTI_StartMenu(WTerminal, ret);
+
+         // Adiciona opção 1 do menu:
+         PTI_AddMenuOption(WTerminal, 'Imprimir QR Code', ret);
+         // Adiciona opção 2 ao menu:
+         PTI_AddMenuOption(WTerminal, 'Imprimir C.Barras', ret);
+         // Adiciona opção 3 ao menu:
+         PTI_AddMenuOption(WTerminal, 'Retornar', ret);
+         // Executa o menu:
+         PTI_ExecMenu(WTerminal, 'SELECIONE A OPCAO', 30, puiSelection, ret);
+
+         //========================================================
+         // Verifica tempo default de espera da conexão(TIMEOUT),
+         // ao esgotar este tempo, a conexão é finalizada!,
+         // mostrando mensagem na tela do POS
+         //========================================================
+         if (ret = POSenums.PTIRET_TIMEOUT) then
+             begin
+               PTI_Display(WTerminal, 'Tempo de Espera' + chr(13) + 'Esgotado(TIMEOUT)', ret);
+               // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+               PTI_WaitKey(WTerminal, 5, key, ret);
+
+               retorno := 1;
+
+               Break;
+
+             end;
+
+
+         // verifica opção escolhida
+         if(puiSelection = 0) then
+            begin
+                //Impressão de QR Code
+                  MandaMemo('');
+                  MandaMemo('Escolheu QR Code');
+                  PTI_PrnSymbolCode(WTerminal, 'http://www.ntk.com.br', 4, ret);
+
+                  //Avança algumas linhas do papel da impressora:
+                  PTI_PrnFeed(WTerminal, ret);
+
+            end
+         else if (puiSelection = 1) then
+            begin
+                //Impressão de código de barras:
+                  MandaMemo('');
+                  MandaMemo('Escolheu Codigo de Barras');
+                  PTI_PrnSymbolCode(WTerminal, '0123456789', 2, ret);
+
+                  //Avança algumas linhas do papel da impressora:
+                  PTI_PrnFeed(WTerminal, ret);
+
+            end
+         else if (puiSelection = 2) then
+            begin
+               Break;
+            end;
+
+
+
+     end;
+
+
+     Result := retorno;
+
+end;
+
+//=============================================
+//  Menu de Opções de Impressão
+//=============================================
+function TPOSPGWLib.menuimpressao(WTerminal: AnsiString): Integer;
+var
+ ret : SHORT;
+ key : SHORT;
+ status : SHORT;
+ WpszData: AnsiString;
+ wLimpapszdata:PSZ_GetpszData;
+ pszData: PSZ_GetpszData;
+ puiSelection:ShortInt;
+ iRet: Int16;
+ I:Integer;
+ retorno:Integer;
+begin
+
+     I := 0;
+
+
+     while I < 10 do
+     begin
+
+         key := 99;
+         ret := 99;
+         status := 99;
+         puiSelection := -1;
+         retorno := 0;
+
+
+
+         PTI_ClearKey(WTerminal, ret);
+
+         // Inicia função de menu:
+         PTI_StartMenu(WTerminal, ret);
+
+         // Adiciona opção 1 do menu:
+         PTI_AddMenuOption(WTerminal, 'PrintReceipt', ret);
+         // Adiciona opção 2 ao menu:
+         PTI_AddMenuOption(WTerminal, 'Display', ret);
+         // Adiciona opção 3 ao menu:
+         PTI_AddMenuOption(WTerminal, 'Print', ret);
+         // Adiciona opção 4 ao menu:
+         PTI_AddMenuOption(WTerminal, 'PrnSymbolcode', ret);
+         // Adiciona opção 5 ao menu:
+         PTI_AddMenuOption(WTerminal, 'Retornar', ret);
+
+         // Executa o menu:
+         PTI_ExecMenu(WTerminal, 'SELECIONE A OPCAO', 30, puiSelection, ret);
+
+         //========================================================
+         // Verifica tempo default de espera da conexão(TIMEOUT),
+         // ao esgotar este tempo, a conexão é finalizada!,
+         // mostrando mensagem na tela do POS
+         //========================================================
+         if (ret = POSenums.PTIRET_TIMEOUT) then
+             begin
+               PTI_Display(WTerminal, 'Tempo de Espera' + chr(13) + 'Esgotado(TIMEOUT)', ret);
+               // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+               PTI_WaitKey(WTerminal, 5, key, ret);
+
+               retorno := 1;
+
+               Break;
+
+             end;
+
+
+               // verifica opção escolhida
+               if (puiSelection = 0)then
+                   begin
+                   // Imprimir recibo
+                      PTI_EFT_PrintReceipt(WTerminal, 3, ret);
+                      if (ret = eCclasse.PTIRET_NODATA) then
+                         begin
+                            MandaMemo('');
+                            MandaMemo('Não Existe Recibo a ser Impresso');
+                            PTI_Display(WTerminal, 'Nao Existe Recibo: ', ret);
+                            // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+                            PTI_WaitKey(WTerminal, 5, key, ret);
+                         end;
+                      if (ret = eCclasse.PTIRET_NOPAPER) then
+                         begin
+                            MandaMemo('');
+                            MandaMemo('Impressora sem Papel');
+                            PTI_Display(WTerminal, 'Impressora sem Papel: ', ret);
+                            // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+                            PTI_WaitKey(WTerminal, 5, key, ret);
+                         end;
+
+                   end
+
+               else if (puiSelection = 1) then
+                    begin
+                   //Imprimir na Tela
+                     PTI_Display(WTerminal, 'Exemplo PTI_Display', ret);
+                   //Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+                     PTI_WaitKey(WTerminal, 5, key, ret);
+                    end
+               else if (puiSelection = 2) then
+                    begin
+                       // imprime na Ipressora
+                       // Limpa Captura de Dados;
+                          pszData := wLimpapszdata;
+                       // Captura um Numero
+                          iRet :=  PTI_GetData(WTerminal, 'Numero Para Imprimir'+chr(13), '@@@@@@', 1, 6, false, false, true, 30, pszData, 2, ret);
+                       // Numero Digitado:
+                          WpszData :=  'PTI_Print Informado: ' + pszData[0].pszData;
+                       // Impressão do Numero:
+                          PTI_Print(WTerminal, WpszData, ret);
+
+                          MandaMemo('');
+                          MandaMemo(WpszData + ' - Terminal: ' + WTerminal);
+                          MandaMemo('');
+
+                       // Avança Papel na Impressora
+                          PTI_PrnFeed (WTerminal, ret);
+
+                    end
+               else if (puiSelection = 3) then
+                    begin
+                        begin
+                           //Imprimir codigo de barras ou QRCode
+                            retorno := menucodigos(WTerminal);
+                            if (retorno = 1) then
+                                Break;
+                        end;
+                    end
+               else if (puiSelection = 4) then
+                   // Sair do Menu
+                      Break;
+
+     end;
+
+
+          Result := retorno;
+
+end;
+
+
+//=============================================
+//  Menu de Operações:
+//  Venda, Cancelamento e Administrativo
+//=============================================
+function TPOSPGWLib.menuoperacoes(WTerminal:AnsiString):Integer;
+var
+ ret : SHORT;
+ key : SHORT;
+ status : SHORT;
+ puiSelection:ShortInt;
+ iRet: Int16;
+ I:Integer;
+ retorno:Integer;
+begin
+     I := 0;
+
+
+     while I < 10 do
+     begin
+
+
+         key := 99;
+         ret := 99;
+         status := 99;
+         puiSelection := -1;
+         retorno := 0;
+
+         PTI_ClearKey(WTerminal, ret);
+
+         // Inicia função de menu:
+         PTI_StartMenu(WTerminal, ret);
+
+         // Adiciona opção 1 do menu:
+         PTI_AddMenuOption(WTerminal, 'Venda', ret);
+         // Adiciona opção 2 ao menu:
+         PTI_AddMenuOption(WTerminal, 'Cancelamento', ret);
+         // Adiciona opção 3 ao menu:
+         PTI_AddMenuOption(WTerminal, 'Administrativo', ret);
+         // Adiciona opção 4 ao menu:
+         PTI_AddMenuOption(WTerminal, 'Retornar', ret);
+         // Executa o menu:
+         PTI_ExecMenu(WTerminal, 'SELECIONE A OPCAO', 30, puiSelection, ret);
+
+         //========================================================
+         // Verifica tempo default de espera da conexão(TIMEOUT),
+         // ao esgotar este tempo, a conexão é finalizada!,
+         // mostrando mensagem na tela do POS
+         //========================================================
+         if (ret = POSenums.PTIRET_TIMEOUT) then
+             begin
+               PTI_Display(WTerminal, 'Tempo de Espera' + chr(13) + 'Esgotado(TIMEOUT)', ret);
+               // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+               PTI_WaitKey(WTerminal, 5, key, ret);
+
+               retorno := 1;
+
+               Break;
+
+             end;
+
+         // verifica opção escolhida
+         if (puiSelection = 0)then
+             operacaovenda(WTerminal)
+         else if (puiSelection = 1) then
+             operacaocancela(WTerminal)
+         else if (puiSelection = 2) then
+             operacaoadmin(WTerminal)
+         else if (puiSelection = 3) then
+             Break;
+
+
+     end;
+
+
+     Result := retorno;
+
+end;
+
+
+//=============================================
+//  Menu Principal da Aplicação
+//=============================================
+function TPOSPGWLib.menuprincipal(WTerminal: AnsiString): Integer;
+var
+ ret : SHORT;
+ key : SHORT;
+ status : SHORT;
+ puiSelection:ShortInt;
+ iRet: Int16;
+ I:Integer;
+ retorno:Integer;
+begin
+
+     I := 0;
+
+
+     while I < 10 do
+     begin
+
+
+         key := 99;
+         ret := 99;
+         status := 99;
+         puiSelection := -1;
+
+
+         PTI_ClearKey(WTerminal, ret);
+
+         // Inicia função de menu:
+         PTI_StartMenu(WTerminal, ret);
+
+         // Adiciona opção 1 do menu:
+         PTI_AddMenuOption(WTerminal, 'Operacoes', ret);
+         // Adiciona opção 2 ao menu:
+         PTI_AddMenuOption(WTerminal, 'Captura de Dados', ret);
+         // Adiciona opção 3 ao menu:
+         PTI_AddMenuOption(WTerminal, 'Impressao', ret);
+         // Adiciona opção 4 ao menu:
+         PTI_AddMenuOption(WTerminal, 'Desconectar', ret);
+         // Executa o menu:
+         PTI_ExecMenu(WTerminal, 'SELECIONE A OPCAO', 30, puiSelection, ret);
+
+
+         //========================================================
+         // Verifica tempo default de espera da conexão(TIMEOUT),
+         // ao esgotar este tempo, a conexão é finalizada!,
+         // mostrando mensagem na tela do POS
+         //========================================================
+         if (ret = POSenums.PTIRET_TIMEOUT) then
+             begin
+               PTI_Display(WTerminal, 'Tempo de Espera' + chr(13) + 'Esgotado(TIMEOUT)', ret);
+               // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+               PTI_WaitKey(WTerminal, 5, key, ret);
+               Break;
+             end;
+
+
+
+         // verifica opção escolhida
+         if (puiSelection = 0)then
+             begin
+               retorno := menuoperacoes(WTerminal);
+               if (retorno = 1) then
+                  Break;
+             end
+         else if (puiSelection = 1) then
+             begin
+               retorno := menucaptura(WTerminal);
+               if (retorno = 1) then
+                  Break;
+             end
+         else if (puiSelection = 2) then
+             begin
+              retorno := menuimpressao(WTerminal);
+               if (retorno = 1) then
+                  Break;
+             end
+         else if (puiSelection = 3) then
+             begin
+                Break;
+             end;
+
+
+     end;
+
+
+    // mensagem de desocectado na aplicação
+    MandaMemo('');
+    MandaMemo('Terminal: ' + WTerminal + ' Desconectado.');
+    MandaMemo('');
+
+    // desconecta terminal POS
+    PTI_Disconnect(WTerminal, 0);
+
+
+    Exit;
+
+
+
+end;
 
 //========================================================
 //  Executa Processo em uma nova Conexão
@@ -1237,6 +1663,7 @@ var
  wLimpapszdata:PSZ_GetpszData;
  pszData: PSZ_GetpszData;
  retorno:AnsiString;
+ I:Integer;
 
 begin
 
@@ -1244,6 +1671,7 @@ begin
      ret := 99;
      status := 99;
      puiSelection := -1;
+     I := 0;
 
      //Mostra ao usuário o identificador do terminal que conectou:
      PTI_Display(WszTerminalId, 'TERMINAL '  + WszTerminalId +   chr(13) +  ' CONECTADO', ret);
@@ -1264,185 +1692,180 @@ begin
      MandaMemo('MAC   : ' + WszMAC);
      MandaMemo('Modelo: ' + WszModel);
 
-     // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
-     PTI_WaitKey(WszTerminalId, 5, key, ret);
-
-     // Mostra ao usuário Tecla Pressionada
-     PTI_Display(WszTerminalId, 'Tecla Pressionada ' + IntToStr(key), ret);
-
-     MandaMemo('');
-     MandaMemo('Tecla Pressionada: '  + IntToStr(key) );
-
 
      // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
      PTI_WaitKey(WszTerminalId, 5, key, ret);
 
-     // Inicia função de menu:
-     PTI_StartMenu(WszTerminalId, ret);
 
-     MandaMemo('');
-     MandaMemo('Inicia Função de Menu - PTI_StartMenu: ' );
-     MandaMemo('');
-     MandaMemo('OPCAO 1');
-     MandaMemo('OPCAO 2');
-
-     // Adiciona opção 1 do menu:
-     PTI_AddMenuOption(WszTerminalId, 'OPCAO 1', ret);
-     // Adiciona opção 2 ao menu:
-     PTI_AddMenuOption(WszTerminalId, 'OPCAO 2', ret);
-     // Executa o menu:
-     PTI_ExecMenu(WszTerminalId, 'SELECIONE A OPCAO', 30, puiSelection, ret);
-
-     if(puiSelection = 190)then
-        begin
-           //Mostra para o usuário que nenhuma opção foi selecionada:
-           PTI_Display(WszTerminalId, 'NENHUMA OPCAO' + chr(13) + 'SELECIONADA', ret);
-        end
-     else
-        begin
-           //Mostra para o usuário a opção selecionada por ele:
-           PTI_Display(WszTerminalId, 'OPCAO SELECIONADA ' + IntToStr(puiSelection), ret);
-        end;
+     // Menu Principal
+     menuprincipal(WszTerminalId);
 
 
-     MandaMemo('Opção Selecionada ' + IntToStr(puiSelection));
-     MandaMemo('');
+     Exit;
 
-     //Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
-     PTI_WaitKey(WszTerminalId, 5, key, ret);
+
 
 
      //================================
 
-     // Inicia função de menu para CPF/Captura de Dados:
-
-     ret := 99;
-     puiSelection := -1;
-
-     PTI_ClearKey(WszTerminalId, ret);
-
-     PTI_StartMenu(WszTerminalId, ret);
-
-     MandaMemo('');
-     MandaMemo('Inicia Função de Menu P/ CPF - PTI_StartMenu: ' );
-     MandaMemo('');
-     MandaMemo('Captura de CPF Mascarado ');
-     MandaMemo('Captura de CPF Não mascarado');
-
-     // Adiciona opção 1 do menu:
-     PTI_AddMenuOption(WszTerminalId, 'CPF C/Mascara', ret);
-     // Adiciona opção 2 ao menu:
-     PTI_AddMenuOption(WszTerminalId, 'CPF S/Mascara', ret);
-     // Executa o menu:
-     PTI_ExecMenu(WszTerminalId, 'SELECIONE A OPCAO', 30, puiSelection, ret);
-
-     if(puiSelection = 190)then
-        begin
-           //Mostra para o usuário que nenhuma opção foi selecionada:
-           PTI_Display(WszTerminalId, 'NENHUMA OPCAO' + chr(13) + 'SELECIONADA', ret);
-        end
-     else
-        begin
-           //Mostra para o usuário a opção selecionada:
-           PTI_Display(WszTerminalId, 'OPCAO SELECIONADA ' + IntToStr(puiSelection), ret);
-        end;
-
-     if(puiSelection = 0) then
-        begin
-           iRet :=  PTI_GetData(WszTerminalId, 'CPF C/Mascara', '@@@.@@@.@@@-@@', 11, 11, false, false, true, 30, pszData, 2, ret);
-        end
-     else
-        begin
-           iRet :=  PTI_GetData(WszTerminalId, 'CPF S/Mascara', '@@@.@@@.@@@-@@', 11, 11, true, false, false, 30, pszData, 2, ret);
-        end;
 
 
-     WpszData := pszData[0].pszData;
-
-     MandaMemo('');
-     MandaMemo('CPF Capturado: ' + WpszData + ' - Terminal: ' + WszTerminalId);
-     MandaMemo('');
-
-
-     //Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
-      PTI_WaitKey(WszTerminalId, 5, key, ret);
-
-
-     // Limpa Captura de Dados;
-     pszData := wLimpapszdata;
-
-
-     //=============================================
-
-     // Captura um Numero
-        iRet :=  PTI_GetData(WszTerminalId, 'Numero Para Imprimir', '@@@@@@', 1, 6, false, false, true, 30, pszData, 2, ret);
-     // Numero Digitado:
-        WpszData :=  'Numero Informado: ' + pszData[0].pszData;
-     // Impressão do Numero:
-        PTI_Print(WszTerminalId, WpszData, ret);
-
-        MandaMemo('');
-        MandaMemo('Numero Informado: ' + WpszData + ' - Terminal: ' + WszTerminalId);
-        MandaMemo('');
-
-     // Avança Papel na Impressora
-        PTI_PrnFeed (WszTerminalId, ret);
+end;
 
 
 
-     //=============================================
-     // Inicia função de menu QRCode/Codigo Barras
+//===============================================================
+{
+     Operação Administrativa
+}
+//===============================================================
+function TPOSPGWLib.operacaoadmin(WTerminal: AnsiString): Integer;
+var
+ ret : SHORT;
+ wLimpapszdata:PSZ_GetpszData;
+ pszData: PSZ_GetpszData;
+begin
 
-     ret := 99;
-     puiSelection := -1;
+    //Limpa Captura de Dados;
+      pszData := wLimpapszdata;
 
-     PTI_ClearKey(WszTerminalId, ret);
+    //Inicia transação Admin:
+      PTI_EFT_Start(WTerminal, eCclasse.PWOPER_ADMIN, ret);
 
-     PTI_StartMenu(WszTerminalId, ret);
+    //Executa transação:
+      MandaMemo('Executou Transação Administrativa: ');
+      PTI_EFT_Exec(WTerminal, ret);
 
-     MandaMemo('');
-     MandaMemo('Inicia Função de Menu: ' );
-     MandaMemo('');
-     MandaMemo('Imprimir QR Code');
-     MandaMemo('Imprimir Codigo Barras');
-
-     // Adiciona opção 1 do menu:
-     PTI_AddMenuOption(WszTerminalId, 'Imprimir QR Code', ret);
-     // Adiciona opção 2 ao menu:
-     PTI_AddMenuOption(WszTerminalId, 'Imprimir C.Barras', ret);
-     // Executa o menu:
-     PTI_ExecMenu(WszTerminalId, 'SELECIONE A OPCAO', 30, puiSelection, ret);
-
-     if(puiSelection = 190)then
-        begin
-           //Mostra para o usuário que nenhuma opção foi selecionada:
-           PTI_Display(WszTerminalId, 'NENHUMA OPCAO' + chr(13) + 'SELECIONADA', ret);
-        end
-     else
-        begin
-           //Mostra para o usuário a opção selecionada:
-           PTI_Display(WszTerminalId, 'OPCAO SELECIONADA ' + IntToStr(puiSelection), ret);
-        end;
+      if (ret = eCclasse.PTIRET_OK) then
+         begin
+             // OK
+         end
+      else
+         begin
+             // Não retornou OK, vai para confirmação, pode existir transação pendente ou com erro.
+             confirmacao(WTerminal);
+         end;
 
 
-     if(puiSelection = 0) then
-        begin
-            //Impressão de QR Code
-              MandaMemo('');
-              MandaMemo('Escolheu QR Code');
-              PTI_PrnSymbolCode(WszTerminalId, 'http://www.ntk.com.br', 4, ret);
-        end
-     else
-        begin
-            //Impressão de código de barras:
-              MandaMemo('');
-              MandaMemo('Escolheu Codigo de Barras');
-              PTI_PrnSymbolCode(WszTerminalId, '0123456789', 2, ret);
-        end;
+      Exit;
 
 
-     //Avança algumas linhas do papel da impressora:
-       PTI_PrnFeed(WszTerminalId, ret);
+
+end;
+
+
+
+//=========================================================================
+  {
+     Operação de Cancelamento
+  }
+//=========================================================================
+function TPOSPGWLib.operacaocancela(WTerminal: AnsiString): Integer;
+var
+  iRet: Int16;
+  WpszData: AnsiString;
+  RET:SHORT;
+  key : SHORT;
+  I:Integer;
+  puiSelection:ShortInt;
+  WData:string;
+  retorno:AnsiString;
+begin
+
+
+
+            //Inicia transação de Cancelamento:
+             PTI_EFT_Start(WTerminal, eCclasse.PWOPER_SALEVOID, ret);
+
+             if (ret = eCclasse.PTIRET_CANCEL) then
+                 begin
+                   MandaMemo('Cancelamento Cancelado pela aplicação: ');
+                   PTI_Display(WTerminal, 'Cancelado pela aplicacao: ', ret);
+                   // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+                   PTI_WaitKey(WTerminal, 5, key, ret);
+                   Exit;
+                 end;
+
+
+            //Executa transação:
+              PTI_EFT_Exec(WTerminal, ret);
+
+
+
+            if (ret = 0)then           // Transação autorizada OK
+               begin
+
+
+                    // Mostra valores armazenados em todos PWINFO_
+                    PrintResultParams(WTerminal);
+
+                    // Impressão do comprovante da transação:
+                    PTI_EFT_PrintReceipt(WTerminal, 3, ret);
+
+                    // sinal sonoro
+                    PTI_Beep(WTerminal, 0, ret);
+
+                    // Menu de Confirmação:
+                    PTI_StartMenu(WTerminal, ret);
+                    PTI_AddMenuOption(WTerminal, 'SIM', ret);
+                    PTI_AddMenuOption(WTerminal, 'NAO', ret);
+                    PTI_ExecMenu(WTerminal, 'CONFIRMAR TRANSACAO?', 30, puiSelection, ret);
+
+                    if (puiSelection = 0)then
+                       begin
+                        PTI_EFT_Confirm(WTerminal, eCclasse.PTICNF_SUCCESS, ret);
+                       end
+                    else
+                       begin
+                        PTI_EFT_Confirm(WTerminal, eCclasse.PTICNF_OTHERERR, ret);
+                       end;
+
+               end
+            else
+               begin
+
+                    // Transação Pendente ou Falhou
+
+                    // Mostra valores armazenados em todos PWINFO_???
+                    PrintResultParams(WTerminal);
+
+                    // retorno de mensagem
+                    PTI_EFT_GetInfo(WTerminal, eCclasse.PWINFO_RESULTMSG, SizeOf(szValue), szValue, ret);
+
+                    retorno := szValue[0].pszValue;
+                    MandaMemo('');
+                    MandaMemo(retorno);
+
+                    // metodo de confirmação para o caso de transação pendente ou ter falhado
+                    confirmacao(WTerminal);
+
+               end;
+
+
+
+
+
+end;
+
+
+//=========================================================================
+  {
+     Operação de Venda
+  }
+//=========================================================================
+function TPOSPGWLib.operacaovenda(WTerminal: AnsiString): Integer;
+var
+ ret : SHORT;
+ tret: SHORT;
+ key : SHORT;
+ status : SHORT;
+ puiSelection:ShortInt;
+ iRet: Int16;
+ WpszData: AnsiString;
+ wLimpapszdata:PSZ_GetpszData;
+ pszData: PSZ_GetpszData;
+ retorno:AnsiString;
+begin
 
 
      // Limpa Captura de Dados;
@@ -1453,214 +1876,94 @@ begin
 
     //Obtém do usuário o valor da transação:
      MandaMemo('Digite O Valor do Pagamento:');
-     iRet :=  PTI_GetData(WszTerminalId, 'DIGITE VALOR DO PAGAMENTO', '@@@.@@@,@@', 3, 8, false, false, false, 30, pszData, 2, ret);
+     iRet :=  PTI_GetData(WTerminal, 'DIGITE VALOR PAGAMENTO ' +chr(13), '@@@.@@@,@@', 3, 8, false, false, false, 30, pszData, 2, ret);
+
+     if (ret = eCclasse.PTIRET_CANCEL) then
+         begin
+           MandaMemo('Venda Abortada pela aplicação: ');
+           PTI_Display(WTerminal, 'Venda Abortada ' + chr(13) + 'pela Aplicacao', ret);
+           // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
+           PTI_WaitKey(WTerminal, 5, key, ret);
+           Exit;
+         end;
 
     //Inicia transação de pagamento:
-     PTI_EFT_Start(WszTerminalId, eCclasse.PWOPER_SALE, ret);
+     PTI_EFT_Start(WTerminal, eCclasse.PWOPER_SALE, ret);
 
     //Insere parâmetro "moeda":   986 = Real
-     PTI_EFT_AddParam(WszTerminalId, eCclasse.PWINFO_CURRENCY, '986', ret);
+     PTI_EFT_AddParam(WTerminal, eCclasse.PWINFO_CURRENCY, '986', ret);
 
     //Recupera Valor Total Digitado;
      WpszData := pszData[0].pszData;
-     MandaMemo('Valor Informado: '  + WpszData + ' - Terminal: ' + WszTerminalId);
+     MandaMemo('Valor Informado: '  + WpszData + ' - Terminal: ' + WTerminal);
      MandaMemo('');
 
      // Adiciona Parametro Valor Total
-     PTI_EFT_AddParam(WszTerminalId, eCclasse.PWINFO_TOTAMNT, WpszData, ret);
+     PTI_EFT_AddParam(WTerminal, eCclasse.PWINFO_TOTAMNT, WpszData, ret);
 
     //Executa transação:
      MandaMemo('Executa Transação de Venda: ');
-     PTI_EFT_Exec(WszTerminalId, ret);
+     PTI_EFT_Exec(WTerminal, ret);
 
 
-
-    if (ret = 0)then           // Transação autorizada
+    if (ret = 0)then           // Transação autorizada OK
        begin
 
               // Mostra valores armazenados em todos PWINFO_???
-              PrintResultParams(WszTerminalId);
+              PrintResultParams(WTerminal);
 
 
               //Impressão de código de barras:
-              PTI_PrnSymbolCode(WszTerminalId, '0123456789', 2, ret);
+              PTI_PrnSymbolCode(WTerminal, '0123456789', 2, ret);
 
               //Impressão de QR Code
-              PTI_PrnSymbolCode(WszTerminalId, 'http://www.ntk.com.br', 4, ret);
+              PTI_PrnSymbolCode(WTerminal, 'http://www.ntk.com.br', 4, ret);
 
               //Avança algumas linhas do papel da impressora:
-              PTI_PrnFeed(WszTerminalId, ret);
+              PTI_PrnFeed(WTerminal, ret);
 
               //Impressão do comprovante da transação:
-              PTI_EFT_PrintReceipt(WszTerminalId, 3, ret);
+              PTI_EFT_PrintReceipt(WTerminal, 3, ret);
 
 
-              PTI_Beep(WszTerminalId, 0, ret);
+              PTI_Beep(WTerminal, 0, ret);
 
               // Limpa buffer de teclas pressionadas
-              PTI_ClearKey(WszTerminalId, ret);
+              PTI_ClearKey(WTerminal, ret);
 
 
               //Exemplo de menu:
-              PTI_StartMenu(WszTerminalId, ret);
-              PTI_AddMenuOption(WszTerminalId, 'SIM', ret);
-              PTI_AddMenuOption(WszTerminalId, 'NAO', ret);
-              PTI_ExecMenu(WszTerminalId, 'CONFIRMA TRANSACAO?', 30, puiSelection, ret);
+              PTI_StartMenu(WTerminal, ret);
+              PTI_AddMenuOption(WTerminal, 'SIM', ret);
+              PTI_AddMenuOption(WTerminal, 'NAO', ret);
+              PTI_ExecMenu(WTerminal, 'CONFIRMA TRANSACAO?', 30, puiSelection, ret);
 
               if (puiSelection = 0)then
                  begin
-                  PTI_EFT_Confirm(WszTerminalId, eCclasse.PTICNF_SUCCESS, ret);
+                  PTI_EFT_Confirm(WTerminal, eCclasse.PTICNF_SUCCESS, ret);
                  end
               else
                  begin
-                  PTI_EFT_Confirm(WszTerminalId, eCclasse.PTICNF_OTHERERR, ret);
+                  PTI_EFT_Confirm(WTerminal, eCclasse.PTICNF_OTHERERR, ret);
                  end;
 
        end
     else
        begin
+            // Transação Pendente ou Falhou
 
-            PTI_Beep(WszTerminalId, 1, ret);
+            // Mostra valores armazenados em todos PWINFO_???
+            PrintResultParams(WTerminal);
 
-            PTI_EFT_GetInfo(WszTerminalId, eCclasse.PWINFO_RESULTMSG, SizeOf(szValue), szValue, ret);
+            // recupera retorno de mensagem
+            PTI_EFT_GetInfo(WTerminal, eCclasse.PWINFO_RESULTMSG, SizeOf(szValue), szValue, ret);
 
             retorno := szValue[0].pszValue;
             MandaMemo('');
             MandaMemo(retorno);
 
-       end;
-
-
-
-    MandaMemo('');
-    MandaMemo('Terminal: ' + WszTerminalId + ' Desconectado.');
-    MandaMemo('');
-
-    PTI_Disconnect(WszTerminalId, 0);
-
-
-
-    result := Ret;
-
-
-end;
-
-
-//======================================================
-  {
-        Cancelamento
-  }
-//======================================================
-function TPOSPGWLib.NovaConexaoCancela: Integer;
-var
-  StrTagNFCe: string;
-  falta:string;
-  iRet: Int16;
-  WpszData: AnsiString;
-  RET:SHORT;
-  WTerminal:string;
-  WValor:string;
-  WReferencia:string;
-  status : SHORT;
-  key : SHORT;
-  I:Integer;
-  puiSelection:ShortInt;
-  WData:string;
-  WtoTerminal: Integer;
-  iRetErro : Integer;
-  X:Integer;
-begin
-
-     // Cancelamento de venda
-
-     key := 99;
-     ret := 99;
-     status := 99;
-
-
-
-     //Mostra ao usuário o identificador do terminal que conectou:
-     PTI_Display(WszTerminalId, 'TERMINAL '  + WszTerminalId +   chr(13) +  ' CONECTADO', ret);
-
-     MandaMemo('');
-     MandaMemo('Terminal Conectado: ' + WszTerminalId );
-
-     Application.ProcessMessages;
-
-     // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
-     PTI_WaitKey(WszTerminalId, 5, key, ret);
-
-     // Consulta informações do terminal através da função PTI_CheckStatus:
-     PTI_CheckStatus(WszTerminalId, status, WszModel, WszMAC, WszSerNum, ret);
-
-
-   if ((ret = POSenums.PTIRET_OK) and (status = POSenums.PTISTAT_IDLE)) then
-       begin
-
-             // Mostra ao usuário os dados obtidos através da função PTI_CheckStatus:
-             PTI_Display(WszTerminalId, 'SERIAL: ' + WszSerNum + chr(13) + 'MAC: ' + WszMAC + chr(13) + 'MODELO: ' + WszModel + chr(13) +'Status: ' + IntToStr(status), ret);
-
-             MandaMemo('Serial: ' + WszSerNum);
-             MandaMemo('MAC   : ' + WszMAC);
-             MandaMemo('Modelo: ' + WszModel);
-
-             // Usa função de aguardar tecla para deixar mensagem anterior na tela por 5 segundos:
-             PTI_WaitKey(WszTerminalId, 5, key, ret);
-
-            //Inicia transação de Cancelamento:
-             PTI_EFT_Start(WszTerminalId, eCclasse.PWOPER_SALEVOID, ret);
-
-            //Executa transação:
-              PTI_EFT_Exec(WszTerminalId, ret);
-
-
-            if (ret = 0)then           // Transação autorizada
-               begin
-
-
-                    // Mostra valores armazenados em todos PWINFO_
-                    PrintResultParams(WszTerminalId);
-
-
-                    // Impressão do comprovante da transação:
-                    PTI_EFT_PrintReceipt(WszTerminalId, 3, ret);
-
-                    PTI_Beep(WszTerminalId, 0, ret);
-
-                    // Exemplo de menu:
-                    PTI_StartMenu(WszTerminalId, ret);
-                    PTI_AddMenuOption(WszTerminalId, 'SIM', ret);
-                    PTI_AddMenuOption(WszTerminalId, 'NAO', ret);
-                    PTI_ExecMenu(WszTerminalId, 'CONFIRMAR TRANSACAO?', 30, puiSelection, ret);
-
-                    if (puiSelection = 0)then
-                       begin
-                        PTI_EFT_Confirm(WszTerminalId, eCclasse.PTICNF_SUCCESS, ret);
-                       end
-                    else
-                       begin
-                        PTI_EFT_Confirm(WszTerminalId, eCclasse.PTICNF_OTHERERR, ret);
-                       end;
-
-               end
-            else
-               begin
-                    MandaMemo('');
-                    //WReferencia := PrintReturnDescription(ret);
-                    MandaMemo('Operação Foi Cancelada ou Falhou !');
-                    PrintReturnDescription(ret,'');
-                    PTI_Beep(WszTerminalId, 1, ret);
-               end;
-
-
-
-
-
-            MandaMemo('');
-            MandaMemo('Terminal: ' + WszTerminalId + ' Desconectado.');
-            MandaMemo('');
-
-            PTI_Disconnect(WszTerminalId, 0);
+            // metodo de confirmação para o caso de pendente ou falhou
+            confirmacao(WTerminal);
 
 
        end;
@@ -1668,18 +1971,12 @@ begin
 
 
 
+    Exit;
 
-   Sleep(300);
-
-
-   Result := 0;
-
-   Exit;
 
 
 
 end;
-
 
 //=====================================================================================*\
   {

@@ -3,7 +3,7 @@
    unit:   uLib
    Classe: uLib
 
-   Data de criação  : 20/05/2019
+   Data de criação  : 05/07/2019
    Autor            :
    Descrição        : Lib contendo estruturas Auxiliares da Aplicação
    }

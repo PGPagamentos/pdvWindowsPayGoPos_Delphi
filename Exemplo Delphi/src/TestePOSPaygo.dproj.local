@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2019/06/25 10:29:01.000.233,=C:\Users\Fernando Leal\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>2019/06/25 10:29:28.000.900,C:\DesenvolvimentoPOS\ProjetosPOS\Principal.pas=C:\Users\Fernando Leal\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>2019/06/25 10:29:28.000.900,C:\DesenvolvimentoPOS\ProjetosPOS\Principal.dfm=C:\Users\Fernando Leal\Documents\Embarcadero\Studio\Projects\Unit1.dfm</Transaction>
+    <Transaction>2019/06/25 10:29:50.000.555,C:\DesenvolvimentoPOS\ProjetosPOS\TestePOSPaygo.dproj=C:\Users\Fernando Leal\Documents\Embarcadero\Studio\Projects\Project1.dproj</Transaction>
+    <Transaction>2019/06/25 10:30:11.000.871,=C:\DesenvolvimentoPOS\ProjetosPOS\Unit1.pas</Transaction>
+    <Transaction>2019/06/25 10:31:33.000.251,C:\DesenvolvimentoPOS\ProjetosPOS\uPOSPGWLib.pas=C:\DesenvolvimentoPOS\ProjetosPOS\Unit1.pas</Transaction>
+    <Transaction>2019/06/25 11:50:45.000.765,=C:\DesenvolvimentoPOS\ProjetosPOS\Unit1.pas</Transaction>
+    <Transaction>2019/06/25 11:51:41.000.951,C:\DesenvolvimentoPOS\ProjetosPOS\uPOSEnums.pas=C:\DesenvolvimentoPOS\ProjetosPOS\Unit1.pas</Transaction>
+    <Transaction>2019/07/11 14:13:29.000.605,=C:\DesenvolvimentoPOS\ProjetosPOS\uLib02.pas</Transaction>
+    <Transaction>2019/07/11 14:13:29.000.535,=C:\DesenvolvimentoPOS\ProjetosPOS\uLib.pas</Transaction>
+  </Transactions>
+</BorlandProject>
