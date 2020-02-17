@@ -32,7 +32,7 @@ const
 // Definição da versão do aplicativo
 //==========================================================================================
 
-  PGWEBLIBTEST_VERSION = '2.1.1';
+  PGWEBLIBTEST_VERSION = '2.1.2';
   PGWEBLIBTEST_AUTDEV  = 'AUTOMACAO DE SISTEMAS';
   PGWEBLIBTEST_AUTNAME = 'TestePOSPaygo';
   PGWEBLIBTEST_AUTCAP  = '15';
@@ -87,8 +87,8 @@ const
   PWINFO_PNDAUTLOCREF = 32520;  //Referência para a infraestrutura Erro! Nome de propriedade do documento desconhecido. da transação que está pendente.
   PWINFO_PNDAUTEXTREF = 32521;  //Referência para o Provedor da transação que está pendente.
   PWINFO_DUEAMNT = 48902;       //Valor devido pelo usuário, considerando PWINFO_CURREXP, já deduzido em PWINFO_TOTAMNT.
-  PWINFO_READJUSTEDAMNT = 48905;//Valor total da transação reajustado, este campo será utilizado caso o autorizador, por alguma regra de negócio específica dele, resolva alterar o valor total que foi solicitado para a transação.
-  PWINFO_CHOLDERNAME = 7992;  // Nome do portador do cartão utilizado, o tamanho segue o mesmo padrão da tag 5F20 EMV.
+  PWINFO_READJUSTEDAMNT = 48905;//Valor total da transação reajustado, este campo será utilizado caso o autorizador, por alguma regra de negócio específica dele, resolva alterar o valor total que foi solicitado para a transação
+  PWINFO_CHOLDERNAME = 7992;  // Nome do portador do cartão utilizado, o tamanho segue o padrão da tag 5F20 EMV.
   PWINFO_CARDNAMESTD = 196;   // Descrição do produto bandeira padrão relacionado ao BIN.
 
 
